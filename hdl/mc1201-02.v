@@ -763,8 +763,8 @@ assign rk11_dma_ack = (rk11_dma_state == 1) ? wb_ack: 1'b0;
 //******************************************************************* 
 
 // Страница ввода-выводв
-assign uart1_stb  = wb_stb & wb_cyc & (wb_adr[16:3] == (17'o177560 >> 3));   // DL11 консольный
-assign uart2_stb  = wb_stb & wb_cyc & (wb_adr[16:3] == (17'o176500 >> 3));   // DL11 дополнительный
+assign uart1_stb  = wb_stb & wb_cyc & (wb_adr[16:3] == (17'o177560 >> 3));   // ИРПС консольный - 177560-177566 
+assign uart2_stb  = wb_stb & wb_cyc & (wb_adr[16:3] == (17'o176500 >> 3));   // ИРПС дополнительный - 176500-177506
 assign rk11_stb   = wb_stb & wb_cyc & (wb_adr[16:4] == (17'o177400 >> 4));   // диск RK-11D  177400-177416
 assign lpt_stb    = wb_stb & wb_cyc & (wb_adr[16:2] == (17'o177514 >> 2));   // ИРПР - 177514-177516
 assign dw_stb     = wb_stb & wb_cyc & (wb_adr[16:5] == (17'o174000 >> 5));   // DW - 174000-174026
