@@ -63,7 +63,7 @@ if (in == 0) {
     printf("- ошибка открытия входного файла %s\n",filename);
     return;
 }
-card=fopen(argv[1],"w");
+card=fopen(argv[1],"r+");
 if (card == 0) {
     printf("- ошибка открытия SD-карты %s\n",argv[1]);
     return;

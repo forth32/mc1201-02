@@ -44,7 +44,7 @@ DD[3]=0;
 // поиск устройства
 for(i=0;;i++) {
     if (devtable[i].name == 0) {
-        printf("Неверный тип устройства - %s",DD);
+        printf("Неверный тип устройства - %s\n",DD);
         return;
     }
     if (strncmp(DD,devtable[i].name,2) == 0) {
