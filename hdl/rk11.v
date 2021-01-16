@@ -647,14 +647,14 @@ module rk11 (
                                     if (nxm == 1'b0 & sdcard_error == 1'b0)   begin
                                        rkcs_mex <= 2'b00; //ram_phys_addr[17:16] ; 
                                        rkba <= {ram_phys_addr[15:1], 1'b0} ; 
-                                          // don't increment beyond 11.
+                                          //
                                        if ((rkda_sc[3:0]) < (4'b1011)) rkda_sc[3:0] <= rkda_sc[3:0] + 1'b1 ; 
                                        else  begin
                                           rkda_sc[3:0] <= 4'b0000 ; 
                                           if (rkda_hd == 1'b0) rkda_hd <= 1'b1 ; 
                                           else begin
                                              if ((rkda_cy) == (8'b11001010) & rkcs_fmt != 1'b1 & (wcp) > (16'b0000000100000000)) begin
-                                                // o"000" thru "o"312"
+                                                // 
                                                 rker_ovr <= 1'b1 ; 
                                                 rkcs_rdy <= 1'b1 ; 
                                                 rkdb <= wrkdb ; 
@@ -667,7 +667,7 @@ module rk11 (
                                           end 
                                        end 
                                        if (rkcs_fmt == 1'b1)  begin
-                                             // check if we need to do another header, and setup for the next round if so
+
                                           if ((wcp) > (16'b0000000000000001))  wcp <= (wcp) - (16'b0000000000000001) ; 
                                           else  begin
                                              wcp <= {16{1'b0}} ; 
@@ -677,7 +677,7 @@ module rk11 (
                                           end 
                                        end
                                        else  begin
-                                             // check if we need to do another sector, and setup for the next round if so
+
                                           if ((wcp) > (16'b0000000100000000))   wcp <= (wcp) - (16'b0000000100000000) ; 
                                           else  begin
 														   // чтение завершено
@@ -732,7 +732,7 @@ module rk11 (
                            begin
                               if (rkdelay == 0)  begin
                                  if ((rkda_sc[3:0]) < (4'b1011))  begin
-                                    // don't increment beyond 11.
+                                    // 
                                     rkda_sc[3:0] <= rkda_sc[3:0] + 1'b1 ; 
                                  end
                                  else  begin
@@ -741,7 +741,7 @@ module rk11 (
                                     else  begin
                                        // read check
                                        if ((rkda_cy) == (8'b11001010) & rkcs_fmt != 1'b1 & (wcp) > (16'b0000000100000000)) begin
-                                          // o"000" thru "o"312"
+                                          //
                                           rker_ovr <= 1'b1 ; 
                                           rkcs_rdy <= 1'b1 ; 
                                           start <= 1'b0 ; 
