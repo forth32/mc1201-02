@@ -125,7 +125,6 @@ reg [3:0] sec;   // сектор 0 - 10
 reg [1:0] drv;         // номер привода
 reg [15:0] wordcount;  // число читаемых слов
 reg [15:0] ioadr;      // адрес для чтения-записи данных
-reg disklimit;			// признак достижения конца диска
 reg alltrk_mode; // признак режима чтения полной дорожки
 reg start;       // признак запуска команды на выполнение (go)
 reg [3:0] cmd;		// код команды
@@ -172,30 +171,30 @@ parameter [3:0] CMD_DCOMPLETE = 4;
 parameter [3:0] CMD_STARTSECTOR = 5;
 
 // Состояния DMA-контроллера
-reg [5:0] dma_state;
-reg [5:0] dmanextstate;
-parameter [5:0] DMA_IDLE = 0;
-parameter [5:0] DMA_LOADPARM1 = 1;
-parameter [5:0] DMA_LOADPARM2 = 2;
-parameter [5:0] DMA_LOADPARM3 = 3;
-parameter [5:0] DMA_LOADPARM4 = 4;
-parameter [5:0] DMA_LOADPARM5 = 5;
-parameter [5:0] DMA_LOADWORD = 6;
-parameter [5:0] DMA_LW_WAITREPLY = 7;
-parameter [5:0] DMA_STARTREAD = 8;
-parameter [5:0] DMA_BUF2HOST_PREPARE = 9;
-parameter [5:0] DMA_BUF2HOST = 10;
-parameter [5:0] DMA_BUF2HOST_NEXT = 11;
-parameter [5:0] DMA_SD2HOST_COMPLETE = 12;
-parameter [5:0] DMA_READ_WAITSDSPI = 13;
-parameter [5:0] DMA_STARTWRITE = 14;
-parameter [5:0] DMA_HOST2BUF = 15;
-parameter [5:0] DMA_HOST2BUF_NEXT = 16;
-parameter [5:0] DMA_BUF2SD = 17;
-parameter [5:0] DMA_BUF2SD_NEXT = 18;
-parameter [5:0] DMA_BUF2SD_COMPLETE = 19;
-parameter [5:0] DMA_ALLTRK = 20;
-parameter [5:0] DMA_BOOTPARM = 21;
+reg [4:0] dma_state;
+reg [4:0] dmanextstate;
+parameter [4:0] DMA_IDLE = 0;
+parameter [4:0] DMA_LOADPARM1 = 1;
+parameter [4:0] DMA_LOADPARM2 = 2;
+parameter [4:0] DMA_LOADPARM3 = 3;
+parameter [4:0] DMA_LOADPARM4 = 4;
+parameter [4:0] DMA_LOADPARM5 = 5;
+parameter [4:0] DMA_LOADWORD = 6;
+parameter [4:0] DMA_LW_WAITREPLY = 7;
+parameter [4:0] DMA_STARTREAD = 8;
+parameter [4:0] DMA_BUF2HOST_PREPARE = 9;
+parameter [4:0] DMA_BUF2HOST = 10;
+parameter [4:0] DMA_BUF2HOST_NEXT = 11;
+parameter [4:0] DMA_SD2HOST_COMPLETE = 12;
+parameter [4:0] DMA_READ_WAITSDSPI = 13;
+parameter [4:0] DMA_STARTWRITE = 14;
+parameter [4:0] DMA_HOST2BUF = 15;
+parameter [4:0] DMA_HOST2BUF_NEXT = 16;
+parameter [4:0] DMA_BUF2SD = 17;
+parameter [4:0] DMA_BUF2SD_NEXT = 18;
+parameter [4:0] DMA_BUF2SD_COMPLETE = 19;
+parameter [4:0] DMA_ALLTRK = 20;
+parameter [4:0] DMA_BOOTPARM = 21;
 // Таймер ожидания ответа шины
 reg [7:0] dma_timer;
 
@@ -504,7 +503,6 @@ always @(posedge wb_clk_i)
 	dma_req <= 1'b0;
 	io_complete <= 1'b0;
 	sdbuf_we <= 1'b0;
-	disklimit <= 1'b0;
 	read_start <= 1'b0;
 	sdcard_read_ack <= 1'b0;
 	sdreq <= 1'b0;
