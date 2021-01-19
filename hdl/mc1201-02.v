@@ -810,17 +810,18 @@ wbc_vic #(.N(9)) vic
 //*****************************************************************************
 reg rk11_dma_state;
 reg my_dma_state;
+// линии подтверждения разрешения доступа к шине
 assign rk11_dma_gnt = rk11_dma_state;
 assign my_dma_gnt = my_dma_state;
 assign cpu_access_req = ~ (rk11_dma_state | my_dma_state);
 
 always @(posedge wb_clk) 
-	if (sys_init == 1) begin
-		rk11_dma_state <= 0;
-		my_dma_state <= 0;
+	if (sys_init == 1'b1) begin
+		rk11_dma_state <= 1'b0;
+		my_dma_state <= 1'b0;
 	end	
   // переключение источника - только в отсутствии активного цикла шины
-	else if (wb_cyc == 0) begin
+	else if (wb_cyc == 1'b0) begin
      if (rk11_dma_req == 1'b1)  rk11_dma_state <= 1'b1;  // запрос от RK11
 	  else if (my_dma_req == 1'b1)  my_dma_state <= 1'b1; // запрос от MY
      else begin

@@ -182,7 +182,7 @@ always @(posedge wb_clk_i)   begin
  		         // нет активного прерывания
               i_idle :
                         begin
-						   //  Если поднят флаг A или B - поднимаем триггер прерывания
+						   //  Если поднят флаг - переходим в состояние активного прерывания
                            if ((ide == 1'b1) & (interrupt_trigger == 1'b1))  begin
                               interrupt_state <= i_req ; 
                               irq <= 1'b1 ;    // запрос на прерывание
