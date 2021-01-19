@@ -236,7 +236,7 @@ assign		timer_switch=~button[3];	// выключатель таймерного 
 //********************************************
 assign led[0] = ~rk_sdreq;   // запрос обмена диска RK
 assign led[1] = ~dw_sdreq;   // запрос обмена диска DW
-assign led[2] = ~my_sdreq;   // запрос обмена диска MY
+assign led[2] = ~my_sdreq | ~dx_sdreq;   // запрос обмена диска MY
 assign led[3] = ~timer_on;   // индикация включения таймера
 
 //************************************************
@@ -701,7 +701,7 @@ wire [15:0] my_dma_out;
 wire [3:0] mysddebug;
 
 
-my mydisk (
+kgd_my mydisk (
 
 // шина wishbone
    .wb_clk_i(wb_clk),	// тактовая частота шины
@@ -810,17 +810,18 @@ wbc_vic #(.N(9)) vic
 //*****************************************************************************
 reg rk11_dma_state;
 reg my_dma_state;
+// линии подтверждения разрешения доступа к шине
 assign rk11_dma_gnt = rk11_dma_state;
 assign my_dma_gnt = my_dma_state;
 assign cpu_access_req = ~ (rk11_dma_state | my_dma_state);
 
 always @(posedge wb_clk) 
-	if (sys_init == 1) begin
-		rk11_dma_state <= 0;
-		my_dma_state <= 0;
+	if (sys_init == 1'b1) begin
+		rk11_dma_state <= 1'b0;
+		my_dma_state <= 1'b0;
 	end	
   // переключение источника - только в отсутствии активного цикла шины
-	else if (wb_cyc == 0) begin
+	else if (wb_cyc == 1'b0) begin
      if (rk11_dma_req == 1'b1)  rk11_dma_state <= 1'b1;  // запрос от RK11
 	  else if (my_dma_req == 1'b1)  my_dma_state <= 1'b1; // запрос от MY
      else begin
@@ -871,12 +872,12 @@ assign my_dma_ack = (my_dma_state == 1'b1) ? wb_ack: 1'b0;
 //******************************************************************* 
 
 // Страница ввода-выводв
-assign uart1_stb  = wb_stb & wb_cyc & (wb_adr[16:3] == (17'o177560 >> 3));   // ИРПС консольный - 177560-177566 
+assign uart1_stb  = wb_stb & wb_cyc & (wb_adr[16:3] == (17'o177560 >> 3));   // ИРПС консольный (TT) - 177560-177566 
 assign uart2_stb  = wb_stb & wb_cyc & (wb_adr[16:3] == (17'o176500 >> 3));   // ИРПС дополнительный - 176500-177506
-assign rk11_stb   = wb_stb & wb_cyc & (wb_adr[16:4] == (17'o177400 >> 4));   // диск RK-11D  177400-177416
-assign lpt_stb    = wb_stb & wb_cyc & (wb_adr[16:2] == (17'o177514 >> 2));   // ИРПР - 177514-177516
+assign lpt_stb    = wb_stb & wb_cyc & (wb_adr[16:2] == (17'o177514 >> 2));   // ИРПР (LP) - 177514-177516
+assign rk11_stb   = wb_stb & wb_cyc & (wb_adr[16:4] == (17'o177400 >> 4));   // RK - 177400-177416
 assign dw_stb     = wb_stb & wb_cyc & (wb_adr[16:5] == (17'o174000 >> 5));   // DW - 174000-174026
-assign rx_stb     = wb_stb & wb_cyc & (wb_adr[16:2] == (17'o177170 >> 2));   // RX - 177170-177172
+assign rx_stb     = wb_stb & wb_cyc & (wb_adr[16:2] == (17'o177170 >> 2));   // DX - 177170-177172
 assign my_stb     = wb_stb & wb_cyc & (wb_adr[16:2] == (17'o172140 >> 2));   // MY - 172140-172142 / 177130-177132
 
 // ROM с монитором 055/279 в теневой области с адреса 140000         

@@ -1,23 +1,23 @@
 //
 //  Контроллер дисковода MY
-//
-module my (
+//==============================================================
+module kgd_my (
 
 // шина wishbone
-    input			         wb_clk_i,	// тактовая частота шины
+   input			         wb_clk_i,	// тактовая частота шины
 	input			         wb_rst_i,	// сброс
-	input	 [1:0]           wb_adr_i,	// адрес 
-	input	 [15:0]          wb_dat_i,	// входные данные
-    output reg [15:0]	     wb_dat_o,	// выходные данные
-	input					 wb_cyc_i,	// начало цикла шины
-	input					 wb_we_i,		// разрешение записи (0 - чтение)
-	input					 wb_stb_i,	// строб цикла шины
-	input	 [1:0]           wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
-	output reg			     wb_ack_o,	// подтверждение выбора устройства
+	input	 [1:0]         wb_adr_i,	// адрес 
+	input	 [15:0]        wb_dat_i,	// входные данные
+    output reg [15:0]   wb_dat_o,	// выходные данные
+	input					 	wb_cyc_i,	// начало цикла шины
+	input					 	wb_we_i,		// разрешение записи (0 - чтение)
+	input					 	wb_stb_i,	// строб цикла шины
+	input	 [1:0]         wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
+	output reg			   wb_ack_o,	// подтверждение выбора устройства
 
 // обработка прерывания	
-	output reg	    		 irq,	      // запрос
-	input				     iack,    	// подтверждение
+	output reg	    		irq,	      // запрос
+	input				     	iack,    	// подтверждение
 	
 // DMA
    output reg 				dma_req,    // запрос DMA
@@ -105,8 +105,8 @@ wire reset=wb_rst_i;
 reg interrupt_trigger;     // триггер запроса прерывания
 
 // Регистр ошибок/состояния
-//                          15    14   13   12  11  10  9-8  7    6     5    4    3    2    1    0
-wire [15:0] errstatus = {cmderr,1'b0,1'b0,1'b0,nxp,hd, drv,1'b0,1'b0,1'b0,1'b0,1'b0,1'b1,1'b0,1'b0};
+//                         15    14   13   12  11  10  9-8  7    6       5      4      3    2    1    0
+wire [15:0] errstatus = {1'b0, 1'b0,1'b0,1'b0,nxp,hd, drv,1'b0,1'b0,err_sec,err_cyl,1'b0,1'b1,1'b0,1'b0};
 
 // состояние машины обработки прерывания
 parameter[1:0] i_idle = 0; 
@@ -125,15 +125,17 @@ reg [3:0] sec;   // сектор 0 - 10
 reg [1:0] drv;         // номер привода
 reg [15:0] wordcount;  // число читаемых слов
 reg [15:0] ioadr;      // адрес для чтения-записи данных
-reg disklimit;			// признак достижения конца диска
-
+reg alltrk_mode; // признак режима чтения полной дорожки
 reg start;       // признак запуска команды на выполнение (go)
-reg [3:0] cmd;
-
-reg cmderr;      // ошибка выполнения команды
+reg [3:0] cmd;		// код команды
 reg rstreq;      // запрос на программный сброс
-reg nxp;         // ошибка при DMA-обмене
 
+// Флаги ошибок
+reg nxp;         // таймаут шины при DMA-обмене
+reg err_sec;     // неправильный номер сектора
+reg err_cyl0;     // неправильный номер цилиндра, обнаруженный в обработчике команд
+reg err_cyl1;    // неправильный номер цилиндра, обнаруженный в DMA-контроллере
+wire err_cyl = err_cyl0 | err_cyl1; // объединенный флаг ошибки
 
 // интерфейс к SDSPI
 wire [22:0] sdcard_addr;        // адрес сектора карты
@@ -151,13 +153,15 @@ reg read_start;        // строб начала чтения
 reg write_start;       // строб начала записи
 
 //  Интерфейс к DMA-контроллеру 
+reg io_complete;       // окончание процедуры передачи данных
+reg [15:0] pdata;      // очередное слово, загружаемое из списка параметров
+//    Запросы на выполнение команд:
 reg start_loadparm;    // начало загрузки параметров
 reg start_rd;          // чтение данных
 reg start_wr;          // запись данных
-reg io_complete;       // окончание процедуры передачи данных
-reg [15:0] pdata;      // слово, загрузаемое из списка параметров
+reg start_bootparm;    // установка параметров загрузочного сектора
 
-// Состояния процесса обработки команд
+// Состояния процесса обработки команд контроллера
 reg [3:0] cmdstate;
 parameter [3:0] CMD_START = 0;
 parameter [3:0] CMD_WAITDATA = 1;
@@ -167,28 +171,36 @@ parameter [3:0] CMD_DCOMPLETE = 4;
 parameter [3:0] CMD_STARTSECTOR = 5;
 
 // Состояния DMA-контроллера
-reg [5:0] dma_state;
-reg [5:0] dmanextstate;
-parameter [5:0] DMA_IDLE = 0;
-parameter [5:0] DMA_LOADPARM1 = 1;
-parameter [5:0] DMA_LOADPARM2 = 2;
-parameter [5:0] DMA_LOADPARM3 = 3;
-parameter [5:0] DMA_LOADPARM4 = 4;
-parameter [5:0] DMA_LOADPARM5 = 5;
-parameter [5:0] DMA_LOADWORD = 6;
-parameter [5:0] DMA_LW_WAITREPLY = 7;
-parameter [5:0] DMA_STARTREAD = 8;
-parameter [5:0] DMA_START_SD2HOST = 9;
-parameter [5:0] DMA_WORD2HOST = 10;
-parameter [5:0] DMA_SD2HOST_NEXT = 11;
-parameter [5:0] DMA_SD2HOST_COMPLETE = 12;
-parameter [5:0] DMA_READ_WAITSDSPI = 13;
+reg [4:0] dma_state;
+reg [4:0] dmanextstate;
+parameter [4:0] DMA_IDLE = 0;
+parameter [4:0] DMA_LOADPARM1 = 1;
+parameter [4:0] DMA_LOADPARM2 = 2;
+parameter [4:0] DMA_LOADPARM3 = 3;
+parameter [4:0] DMA_LOADPARM4 = 4;
+parameter [4:0] DMA_LOADPARM5 = 5;
+parameter [4:0] DMA_LOADWORD = 6;
+parameter [4:0] DMA_LW_WAITREPLY = 7;
+parameter [4:0] DMA_STARTREAD = 8;
+parameter [4:0] DMA_BUF2HOST_PREPARE = 9;
+parameter [4:0] DMA_BUF2HOST = 10;
+parameter [4:0] DMA_BUF2HOST_NEXT = 11;
+parameter [4:0] DMA_SD2HOST_COMPLETE = 12;
+parameter [4:0] DMA_READ_WAITSDSPI = 13;
+parameter [4:0] DMA_STARTWRITE = 14;
+parameter [4:0] DMA_HOST2BUF = 15;
+parameter [4:0] DMA_HOST2BUF_NEXT = 16;
+parameter [4:0] DMA_BUF2SD = 17;
+parameter [4:0] DMA_BUF2SD_NEXT = 18;
+parameter [4:0] DMA_BUF2SD_COMPLETE = 19;
+parameter [4:0] DMA_ALLTRK = 20;
+parameter [4:0] DMA_BOOTPARM = 21;
+// Таймер ожидания ответа шины
 reg [7:0] dma_timer;
 
 //***********************************************
 //*  Контроллер SD-карты
 //***********************************************
-
 sdspi_slave sd1 (
 	   // интерфейс к карте
       .sdcard_cs(sdcard_cs), 
@@ -239,7 +251,7 @@ always @(posedge wb_clk_i)   begin
  		         // нет активного прерывания
               i_idle :
                         begin
-						   //  Если поднят флаг A или B - поднимаем триггер прерывания
+						   //  Если поднят флаг - переходим в состояние активного прерывания
                            if ((ie == 1'b1) & (interrupt_trigger == 1'b1))  begin
                               interrupt_state <= i_req ; 
                               irq <= 1'b1 ;    // запрос на прерывание
@@ -263,36 +275,43 @@ always @(posedge wb_clk_i)   begin
 //**************************************************
 // Работа с шиной
 //**************************************************
-    if (reset == 1'b1 || rstreq == 1'b1) begin
+    if ((reset == 1'b1) || (rstreq == 1'b1)) begin
 		 // сброс системы
         interrupt_state <= i_idle ; 
         irq <= 1'b0 ;    // снимаем запрос на прерывания
         start <= 1'b0 ; 
         done <= 1'b1;
         ie <= 1'b0;
-        cmderr <= 1'b0;
         drq <= 1'b0;
         rstreq <= 1'b0;
-		cmd <= 4'b0000;
-		interrupt_trigger <= 1'b0;
+		  cmd <= 4'b0000;
+		  alltrk_mode <= 1'b0;
+			start_loadparm <= 1'b0;
+			start_rd <= 1'b0;
+			start_wr <= 1'b0;
+			start_bootparm <= 1'b0;
+			err_cyl0 <= 1'b0;
+			err_sec <= 1'b0;
+		  interrupt_trigger <= 1'b0;
+		  cmdstate <= CMD_START;
     end
 		
 	// рабочие состояния
     else   begin
 				
 			//*********************************************
-			//* Обработка unibus-транзакций 
+			//* Обработка транзакций общей шины
 			//*********************************************
             // чтение регистров
             if (bus_read_req == 1'b1)   begin
                case (wb_adr_i[1])
                   1'b0 : begin  // 177170 - MYCSR
-				                    //       15                 7   6    5
-									wb_dat_o <= {cmderr, 1'b0, 6'b0, drq, ie, done, 5'b0};   
+				                    //       15    14   13-8    7   6    5
+									wb_dat_o <= {1'b0, 1'b0, 6'b0, drq, ie, done, 5'b0};   
 						 end		
                   1'b1 :   // 177172 - MYDR
                                 if (!drq) wb_dat_o <= errstatus;  // если нет активной команды - читается реистр ошибок
-                                else wb_dat_o <= 16'o0;            // иначе пока нули
+                                else wb_dat_o <= 16'o0;            // иначе пока нули (что там должно быть на самом деле я не понял)
                endcase 
 			end
 			
@@ -309,16 +328,20 @@ always @(posedge wb_clk_i)   begin
 										      // Ввод новой команды
 												start <= 1'b1;					// признак активной команды
 												done <= 1'b0;					// сбрасываем признак завершения команды
-												drq <= 1'b0;
+												drq <= 1'b0;               // сбрасываем запрос данных
 												cmd <= wb_dat_i[4:1];		// код команды
-											   cmderr <= 1'b0;				// сбрасываем ошибки
 												interrupt_trigger <= 1'b0;	// снимаем ранее запрошенное прерывание
 												cmdstate <= CMD_START;     // первый этап обработки команды
+												err_cyl0 <= 1'b0;				// сброс флагов ошибок
+												err_sec <= 1'b0;
+												alltrk_mode <= 1'b0;  		// сброс режима полной дорожки
 										  end			
                                 ie <= wb_dat_i[6];				// флаг разрешения прерывания - доступен для записи всегда
                             end
-                    // 177172 - MYBUF
-                     1'b1 : 	if (drq) begin
+                    // 177172 - MYDR
+                     1'b1 : 	
+										// DRQ поднят - идет чтение адреса блока параметров
+										if (drq) begin
 							            parm_addr[6:0] <= wb_dat_i[7:1];  // загрузка адреса параметров
 											if (reply) drq <= 1'b0;           // снимаем DRQ
 										end	
@@ -328,9 +351,9 @@ always @(posedge wb_clk_i)   begin
                     // запись старших байтов
                     case (wb_adr_i[1])
                      // 177170 - MYCSR
-                     1'b0:  rstreq <= wb_dat_i[14];
-							// 177172 - MYBUF
-							1'b1:  if (drq) parm_addr[14:7] <= wb_dat_i[15:8];
+                     1'b0:  rstreq <= wb_dat_i[14];   // запрос на программный сброс
+							// 177172 - MYDR
+							1'b1:  if (drq) parm_addr[14:7] <= wb_dat_i[15:8];   // остальные биты адреса блока параметров
 						  endcase	
                end 
             end
@@ -340,8 +363,10 @@ always @(posedge wb_clk_i)   begin
 			//*********************************************
   			if (start == 1'b1)  begin
            case (cmd)  // выбор действия по коду функции 
-				// чтение 		
-				4'b0000:
+				4'b0000, // чтение
+				4'b0001, // запись
+				4'b0010, // чтение с меткой
+				4'b0011: // запись с меткой
 				  case (cmdstate)
 				    // этап 1 - взводим DRQ
 				    CMD_START: begin
@@ -351,37 +376,44 @@ always @(posedge wb_clk_i)   begin
 						
 					 // этап 2 - ждем загрузки регистра данных
 					 CMD_WAITDATA: 
-					   if (drq == 1'b0) begin 
-						   cmdstate <= CMD_LOADPARM;
+					   if (drq == 1'b0) begin   // drq опустился - регистр записан, можно продолжать
+						   cmdstate <= CMD_LOADPARM; 
 							start_loadparm <= 1'b1;   // запускаем процедуру загрузки параметров через DMA, адрес у нас теперь есть
 					   end
 					
-				    // этап 3 - загружаем параметры
+				    // этап 3 - проверяем параметры
 					 CMD_LOADPARM:
-						if (io_complete == 1'b1) begin
-							start_loadparm <= 1'b0;     // снимаем запрос на загрузку параметров
-							// проверяем допустимость номеров цилиндра и сектора
-							if ((cyl > 7'd79) || (sec > 4'd10)) begin
-							  cmderr <= 1'b0;
+						if (io_complete == 1'b1) begin  // загрузка параметров окончена
+							start_loadparm <= 1'b0;      // снимаем запрос на загрузку параметров
+							// проверяем допустимость номера цилиндра 0 - 79
+							if (cyl > 7'd79) begin 
+							  err_cyl0 <= 1'b1;
+							  start <= 1'b0;    // при ошибке завершаем работу команды
+							  cmdstate <= CMD_START;
+							end
+							// проверяем допустимость номера сектора
+							else if (sec > 4'd9) begin
+							  err_sec <= 1'b1;
 							  start <= 1'b0;
 							  cmdstate <= CMD_START;
 							end 
-							else  begin
-								cmdstate <= CMD_STARTSECTOR;
-							end
+							else cmdstate <= CMD_STARTSECTOR; // ошибок нет - переходим к запуску обмена с картой
 				       end
 				
 				   CMD_STARTSECTOR: begin
-								start_rd <= 1'b1;         // стартуем операцию чтения сектора
+					         // запускаем DMA-контроллер
+								if (cmd[0] == 0) start_rd <= 1'b1;  // чтение
+								else				  start_wr <= 1'b1; 	// запись
 								cmdstate <= CMD_WAITDMA;
 						 end
 						 
 					// ожидание завершения работы DMA-контролера		
 					CMD_WAITDMA:
-						if (io_complete == 1'b1) begin
+						if ((io_complete == 1'b1) || (nxp == 1'b1)) begin
 							start_rd <= 1'b0;					// снимаем команду чтения
-							if (|wordcount == 1'b0) begin		
-							   // передано заказанное количество слов
+							start_wr <= 1'b0;					// снимаем команду записи
+							if ((|wordcount == 1'b0)  || (nxp == 1'b1)) begin		
+							   // передано заказанное количество слов или уперлись в ошибку шины
 								start <= 1'b0;  				// завершаем обработку команды
 								done <= 1'b1;					// признак завершения обработки
 								interrupt_trigger <= 1'b1;	// взводим триггер прерывания
@@ -393,9 +425,38 @@ always @(posedge wb_clk_i)   begin
 							end	
 						end	
 					 endcase   // cmdstate
+					 
+			  // чтение дорожки
+			  4'b0100: begin
+					alltrk_mode <= 1'b1;  // флаг полной дорожки
+					cmd <= 4'b0000;       // далее обычная команда чтения
+					end
 			  
-			  // установка парметров
-			  4'b1000:
+			  // Чтение загрузочного сектора
+			  4'b1111: 
+				  case (cmdstate)
+				   // этап 1 - поднимаем DRQ
+					CMD_START: begin
+					   drq <= 1'b1;
+						cmdstate <= CMD_WAITDATA;
+						end
+						
+					 // этап 2 - ждем загрузки регистра данных
+					 CMD_WAITDATA: 
+					   if (drq == 1'b0) begin
+							start_bootparm <= 1'b1;   // запускаем установку загрузочных параметров
+							if (io_complete == 1'b1) begin  // установка окончена
+								start_bootparm <= 1'b0;  // снимаем команду
+								cmdstate <= CMD_STARTSECTOR; // переходим к чтению сектора
+								cmd <= 4'b0000;  // меняем код команды на команду чтения
+							end  
+                  end
+			     endcase
+					
+			  4'b1000, // установка парметров
+			  4'b0110, // форматирование дорожки
+			  4'b0111, // переход на дорожку
+			  4'b0101: // чтение заголовка
 				  case (cmdstate)
 				    CMD_START: begin
 					   drq <= 1'b1;	// поднимаем DRQ
@@ -412,12 +473,13 @@ always @(posedge wb_clk_i)   begin
 						end
 					endcase	
 					
+			  // Остальные команды ничего не делают	
+			  // чтение регистра ошибок 1001 отрабатывается как nop, потому как из MYDR и так всегда читается слово ошибок при опущенном DRQ
 		     default: begin	
 							start <= 1'b0;
 							done <= 1'b1;
 							interrupt_trigger <= 1'b1;
 							cmdstate <= CMD_START;
-							cmderr <= 1'b1;
 						  end	
 			  endcase	
 			  
@@ -426,29 +488,28 @@ always @(posedge wb_clk_i)   begin
 	end  // конец блок обработки рабочего состояния		
 end   // конец всего always-блока
 
-
-//   output reg[15:0]     dma_adr_o,  // выходной адрес при DMA-обмене
-//   input[15:0] 			dma_dat_i,  // входная шина данных DMA
-//   output reg[15:0] 		dma_dat_o,  // выходная шина данных DMA
-//	output reg 				dma_stb_o,  // строб цикла шины DMA
-//	output reg 				dma_we_o,   // направление передачи DMA (0 - память->диск, 1 - диск->память) 
-//   input 					dma_ack_i,  // Ответ от устройства, с которым идет DMA-обмен
-
-//*******************************************
+//**********************************************************************************************************************
 //*   Контроллер DMA
-//*******************************************
+//*
+//* Выполняет команды:
+//*   start_loadparm - загрузка блока параметров из памяти хоста 
+//*   start_bootparm - загрузка блока параметров сектором 0 дорожки 0 стороны 0 - подготовка к загрузке ОС
+//*   start_rd       - запуск операции чтения
+//*   start_wr       - запуск операции записи
+//**********************************************************************************************************************
 always @(posedge wb_clk_i) 
-  if (reset == 1'b1 || rstreq == 1'b1) begin
+  if ((reset == 1'b1) || (rstreq == 1'b1)) begin
 	// Сброс контроллера
-	dma_state=DMA_IDLE;
+	dma_state <= DMA_IDLE;
+	dma_req <= 1'b0;
 	io_complete <= 1'b0;
 	sdbuf_we <= 1'b0;
-	disklimit <= 1'b0;
 	read_start <= 1'b0;
 	sdcard_read_ack <= 1'b0;
 	sdreq <= 1'b0;
 	sdcard_write_ack <= 1'b0;
 	write_start <= 1'b0;
+	err_cyl1 <= 1'b0;
   end
   
   else case (dma_state)
@@ -458,55 +519,83 @@ always @(posedge wb_clk_i)
 	   io_complete <= 1'b0;
 		dma_stb_o <= 1'b0;
 		dma_req <= 1'b0;
+		// команда загрузки параметров 
 		if (start_loadparm == 1'b1) begin
 		  nxp <= 1'b0;
-		  dma_req <= 1'b1;
-		  if (dma_gnt == 1'b1) dma_state <= DMA_LOADPARM1;
+		  err_cyl1 <= 1'b0;
+		  dma_req <= 1'b1;   // запрос DMA
+		  if (dma_gnt == 1'b1) dma_state <= DMA_LOADPARM1; // получили доступ к шине
 		end
+		
+		// команда чтения сектора
 		else if (start_rd == 1'b1) begin	
 		  nxp <= 1'b0;
-		  sdreq <= 1'b1;
+		  err_cyl1 <= 1'b0;
+		  sdreq <= 1'b1;  // запрос доступа к SD-карте
 		  dma_state <= DMA_STARTREAD;
 		end
+		
+		// команда записи сектора
+		else if (start_wr == 1'b1) begin	
+		  nxp <= 1'b0;
+		  sdreq <= 1'b1;
+		  err_cyl1 <= 1'b0;
+		  dma_state <= DMA_STARTWRITE;
+		end
+		
+		else if (start_bootparm == 1'b1) dma_state <= DMA_BOOTPARM;
     end
 	 
 	 // загрузка блока параметров - подготовка
     DMA_LOADPARM1: begin
 		dmanextstate <= DMA_LOADPARM2;
 		dma_state <= DMA_LOADWORD;
-		dma_adr_o <= {parm_addr, 1'b0};
+		dma_adr_o <= {parm_addr, 1'b0};  // выставляем адрес блока параметров на шину адреса
 		end
 	 // загрузка блока параметров - слово 1	
 	 DMA_LOADPARM2: begin
-		drv <= pdata[1:0];
-		hd <= pdata[2];
-		dmanextstate <= DMA_LOADPARM3;
-		dma_adr_o <= {parm_addr+1'b1, 1'b0};
-		dma_state <= DMA_LOADWORD;
+		drv <= pdata[1:0];      // номер привода
+		hd <= pdata[2];         // головка
+		dmanextstate <= DMA_LOADPARM3;  
+		dma_adr_o <= {parm_addr+1'b1, 1'b0}; // адрес следующего слова парамтеров
+		dma_state <= DMA_LOADWORD;  // переходим к загрузке данных
 		end
 	 // загрузка блока параметров - слово 2	
 	 DMA_LOADPARM3: begin
-		ioadr <= pdata;
+		ioadr <= pdata;     // адрес буфера в памяти хоста
 		dmanextstate <= DMA_LOADPARM4;
 		dma_adr_o <= {parm_addr+2'd2, 1'b0};
 		dma_state <= DMA_LOADWORD;
 		end
 	 // загрузка блока параметров - слово 3	
 	 DMA_LOADPARM4: begin
-		cyl <= pdata[13:8];
-		sec <= pdata[3:0]-1'b1;
+		cyl <= pdata[14:8];   // цилиндр
+		sec <= pdata[3:0]-1'b1; // сектор, сразу уменьшаем его на 1 (сектора 0 нет, допустимы номера 1-10)
 		dmanextstate <= DMA_LOADPARM5;
 		dma_adr_o <= {parm_addr+2'd3, 1'b0};
 		dma_state <= DMA_LOADWORD;
 		end
+	
 	 // загрузка блока параметров - слово4 и завершение процесса	
 	 DMA_LOADPARM5: begin
 	   dma_req <= 1'b0;      // снимаем запрос DMA
-		wordcount <= pdata;
+		wordcount <= pdata;   // последний параметр - счетчик слов для обмена
+		if (alltrk_mode == 1'b1) dma_state <= DMA_ALLTRK;  // режим полной дорожки
+		else begin
+			io_complete <= 1'b1;  // подтверждаем окончание выполнения команды
+			if (start_loadparm == 0) dma_state <= DMA_IDLE; // ждем снятия запроса
+		end	
+	  end
+	 
+    // обработка запроса на полную дорожку
+	 DMA_ALLTRK:	begin
+	   // подмена части параметров
+		sec <= 4'b0;     // сектор 0
+		wordcount <= 16'd2560; // размер одной дорожки
 		io_complete <= 1'b1;
 		if (start_loadparm == 0) dma_state <= DMA_IDLE;
-		end
-	 
+	  end	
+		
     // загрузка одного слова из памяти - старт
 	 DMA_LOADWORD: begin
 	   dma_stb_o <= 1'b1;    // строб начала обмена
@@ -523,79 +612,194 @@ always @(posedge wb_clk_i)
 		   nxp <= 1'b1;    // флаг таймаута
 			dma_state <= DMA_IDLE;  // завершаем процесс
 		end
-		else if (dma_ack_i == 1'b1) begin
+		else if (dma_ack_i == 1'b1) begin // получили подтверждение обмена
 			pdata <= dma_dat_i;   // вынимаем данные с шины
 			dma_adr_o <= dma_adr_o + 2'd2; // адрес++
 			dma_stb_o <= 1'b0;    // снимаем строб транзакции
 			dma_state <= dmanextstate;  // возвращаемся в вызывающий узел
 		end
 	  end	
+	  
 		// старт чтения блока данных
 	 DMA_STARTREAD: 
-	      if (sdack == 1'b1) begin
-				read_start <= 1'b1;   		// запускаем SDSPI на чтение
-				if (sdcard_read_done == 1'b1) begin
-					sdcard_read_ack <= 1'b1;
+	      if (sdack == 1'b1) begin  // получили доступ к SD-карте
+			   // чтение блока окончено 
+				if (sdcard_read_done == 1'b1) begin  
+					sdcard_read_ack <= 1'b1;  // подтверждаем завершение чтения
+					read_start <= 1'b0;       // снимаем запрос на чтение
 					dma_state <= DMA_READ_WAITSDSPI;
 				end
+				// чтение еще не запущено
+				else read_start <= 1'b1;   		// запускаем SDSPI на чтение
 			end
 			
+		// ожидание завершения работы SDSPI	
 		DMA_READ_WAITSDSPI: 
-			if (sdcard_read_done == 1'b0) begin
-			  sdcard_read_ack <= 1'b0;
-			  read_start <= 1'b0;
-			  dma_state <= DMA_START_SD2HOST;
-			  dma_req <= 1'b1;
+			if (sdcard_read_done == 1'b0) begin  // модуль снял сигнал DONE - команда завершена
+			  sdcard_read_ack <= 1'b0;   // снимаем флаг подтверждения
+			  dma_state <= DMA_BUF2HOST_PREPARE;
+			  dma_req <= 1'b1;  // поднимаем запрос на доступ к шине
 			 end 
 			 
-		// подготовка к передаче блока данныхиз буфера к хосту через DMA
-		DMA_START_SD2HOST:
-			if (dma_gnt == 1'b1) begin
-				sdbuf_addr <= 8'o0;
-				dma_we_o <= 1'b1;
-				dma_adr_o <= {ioadr[15:1],1'b0};
-				dma_state <= DMA_WORD2HOST;
+		// подготовка к передаче блока данных из буфера к хосту через DMA
+		DMA_BUF2HOST_PREPARE:
+			if (dma_gnt == 1'b1) begin  // получили доступ к шине
+				sdbuf_addr <= 8'o0;   // начальный адрес в буфере sdspi
+				dma_we_o <= 1'b1;     // режим записи данных в буфер
+				dma_adr_o <= {ioadr[15:1],1'b0};  // начальный адрес на шине для обмена
+				dma_state <= DMA_BUF2HOST;
+				dma_timer <= 8'd200;  // взводим таймер ожидания ответа
 			end
 		// передача одного слова через DMA из буфера в хост-память
-		DMA_WORD2HOST: begin
-			dma_dat_o <= sdbuf_dataout;
-			dma_stb_o <= 1'b1;
-			if (dma_ack_i == 1'b1) dma_state <= DMA_SD2HOST_NEXT;
+		DMA_BUF2HOST: begin
+			dma_dat_o <= sdbuf_dataout;  // данные загружаем из буфера  sdspi
+			dma_stb_o <= 1'b1;           // поднимаем строб транзакции
+			dma_timer <= dma_timer-1'b1;   // таймер--
+			if (|dma_timer == 0) begin
+				// таймаут шины
+				nxp <= 1'b1;    // флаг таймаута
+				dma_state <= DMA_IDLE;  // завершаем процесс
+			end
+			else if (dma_ack_i == 1'b1) dma_state <= DMA_BUF2HOST_NEXT ; // получили ответ с шины - продолжаем
 		  end	
 		
 	   // продолжение переноса данных в ОЗУ хоста
-		DMA_SD2HOST_NEXT:	 begin
-			dma_stb_o <= 1'b0;
-			sdbuf_addr <= sdbuf_addr + 1'b1;
-			dma_adr_o <= dma_adr_o + 2'd2;
-			wordcount <= wordcount - 1'b1;
-			if (wordcount == 16'o1) dma_state <= DMA_SD2HOST_COMPLETE;
-			else if (&sdbuf_addr == 1'b1) begin
+		DMA_BUF2HOST_NEXT:	 begin
+			dma_stb_o <= 1'b0;                // снимаем строб транзакции
+			sdbuf_addr <= sdbuf_addr + 1'b1;  // переходим к следующему слову в буфере
+			dma_adr_o <= dma_adr_o + 2'd2;    // сдвигаем адрес на шине
+			wordcount <= wordcount - 1'b1;    // счетчик слов --
+			if (wordcount == 16'o1) dma_state <= DMA_SD2HOST_COMPLETE; // переданы все слова - завершаем процесс
+			else if (&sdbuf_addr == 1'b1) begin  // доехали до конца блочного буфера
 				// переход к следующему сектору
-				if (sec != 4'd10) sec <= sec + 1'b1;
+				if (sec != 4'd9) sec <= sec + 1'b1;
 				else begin
 					sec <= 4'd0;
 					if (hd == 1'b0) hd <= 1'b1;
 					else begin
 						hd<= 1'b0;
 						if (cyl != 7'd79) cyl <= cyl + 1'b1;
-						else disklimit <= 1'b1;
+						else err_cyl1 <= 1'b1;  // выход за границы дискеты
 					end	
 				end
-				ioadr <= ioadr + 16'o1000;
-				dma_state <= DMA_STARTREAD;
+				ioadr <= ioadr + 16'o1000;  // сдвигаем адрес хост-буфера
+				dma_req <= 1'b0;  // освобождаем шину
+				dma_state <= DMA_STARTREAD; // и продолжаем чтение секторов
 			end	
-			else dma_state <= DMA_WORD2HOST;
+			else begin 
+			   // до конца блочного буфера не доехали
+				dma_state <= DMA_BUF2HOST;  // продолжаем передавать данные из буфера
+				dma_timer <= 8'd200;  // взводим таймер ожидания ответа
+			end	
 		 end
 		
+		// завершение процедуры чтения данных
 		DMA_SD2HOST_COMPLETE: begin
-			dma_req <= 1'b0;
-			sdreq <= 1'b0;
-			io_complete <= 1'b1;
+			dma_req <= 1'b0;  // освобождаем шину
+			sdreq <= 1'b0;  // освобождаем SD-карту
+			io_complete <= 1'b1;  // поднимае флаг завершения команды
 			if (start_rd == 1'b0) dma_state <= DMA_IDLE;
-		 end		
-		 
-		 
+			end		
+			
+		// старт процедуры записи
+		DMA_STARTWRITE: begin
+			dma_req <= 1'b1;    // запрос на доступ к шине
+			if (dma_gnt == 1'b1) begin
+				sdbuf_addr <= 8'o0; // адрес в буфере sdspi начинается с 0
+				dma_we_o <= 1'b0;   // снимаем флаг записи на шину
+				sdbuf_we <= 1'b1;   // включаем режим записи буфера
+				dma_adr_o <= {ioadr[15:1],1'b0};  // начальный адрес хост-буфера
+				dma_state <= DMA_HOST2BUF;
+				dma_timer <= 8'd200;  // взводим таймер ожидания ответа
+			end
+		 end	
+			
+		// передача одного слова через DMA из хост-памяти в буфер
+		DMA_HOST2BUF: begin
+		   dma_stb_o <= 1'b1;   // поднимаем строб транзакции
+			dma_timer <= dma_timer-1'b1;   // таймер--
+			if (|dma_timer == 0) begin
+				// таймаут шины
+				nxp <= 1'b1;    // флаг таймаута
+				dma_state <= DMA_IDLE;  // завершаем процесс
+			end
+			// получен ответ от шины
+			else if (dma_ack_i == 1'b1) begin
+				dma_state <= DMA_HOST2BUF_NEXT;
+				sdbuf_datain <= dma_dat_i;  // вводим в буфер полученное слово
+			end	
+		  end	
+		  
+		// продолжение передачи слова в буфер sdspi	
+		DMA_HOST2BUF_NEXT: begin
+			dma_stb_o <= 1'b0;  // снимаем строб транзакции
+			if (dma_ack_i == 1'b0) begin  // ждем снятия сигнала подтверждения
+				sdbuf_addr <= sdbuf_addr + 1'b1;  // сдвигаем адрес блочного буфера sdspi
+				dma_adr_o <= dma_adr_o+2'o2;      // сдвигаем адрес на шине хоста
+				wordcount <= wordcount - 1'b1;    // счетчик слов --
+				if ((&sdbuf_addr == 1'b1) || (wordcount == 16'o1)) begin
+				   // буфер заполнен до конца
+					sdbuf_we <= 1'b0;         // снимаем разрешение записи в буфер sdspi
+					dma_req <= 1'b0; 			  // освобождаем общую шину
+					write_start <= 1'b1;      // запускаем SDSPI на запись
+					dma_state <= DMA_BUF2SD;
+				end	
+				// буфер не заполнен - продолжаем передачу данных
+				else begin
+					dma_state <= DMA_HOST2BUF;
+					dma_timer <= 8'd200;  // взводим таймер ожидания ответа
+				end
+			end
+		  end	
+		  
+		 // ожидание окончания записи данных на карту 
+		 DMA_BUF2SD: 
+			if (sdcard_write_done == 1'b1) begin 
+			   // SDSPI закончил запись
+				sdcard_write_ack <= 1'b1;  // подтверждаем окончание записи
+				write_start <= 1'b0;		   // снимаем запрос на запись
+				dma_state <= DMA_BUF2SD_NEXT;
+			end	
+			
+		 // продолжение процедуры записи секторов	
+		 DMA_BUF2SD_NEXT: 
+			if (sdcard_write_done == 1'b0) begin
+				sdcard_write_ack <= 1'b0;  // снимаем подтверждение записи
+				if (wordcount == 16'o0) dma_state <= DMA_BUF2SD_COMPLETE; // пепреданы все слова - заканчиваем выполнение команды
+				else begin
+					// переход к следующему сектору
+					if (sec != 4'd9) sec <= sec + 1'b1;
+					else begin
+						sec <= 4'd0;
+						if (hd == 1'b0) hd <= 1'b1;
+						else begin
+							hd<= 1'b0;
+							if (cyl != 7'd79) cyl <= cyl + 1'b1;
+							else err_cyl1 <= 1'b1;  // выход за границы дискеты
+						end	
+					end
+					ioadr <= ioadr + 16'o1000;  // сдвигаем адрес в памяти хоста
+					dma_state <= DMA_STARTWRITE; // продолжаем запись данных
+				end	
+			end	
+		// Завершение выполнения команды записи данных	
+		DMA_BUF2SD_COMPLETE: begin
+			sdreq <= 1'b0;     // освобождаем SD-карту
+			io_complete <= 1'b1;  // признак завершения команды
+			if (start_wr == 1'b0) dma_state <= DMA_IDLE;
+		  end		
+			
+		// установка параметров загрузчоного сектора	
+		DMA_BOOTPARM: begin	
+			cyl <= 7'o0;   // цилиндр 0 
+			hd <= 1'b0;    // головка 0
+			sec <= 4'o0;   // сектор 0
+			drv <= parm_addr[1:0]; // номер привода
+			wordcount <= 16'd256;  // число читаемых слов (1 сектор)
+			ioadr <= 16'o0;  // адрес в памяти
+			io_complete <= 1'b1;
+			if (start_bootparm == 1'b0) dma_state <= DMA_IDLE;
+		 end	
 	endcase	
 	 
 //********************************************
@@ -603,30 +807,21 @@ always @(posedge wb_clk_i)
 //********************************************
 //
 // Формат образа диска:
-//  25 секторов (128 байт) на дорожку(1-26)
-//  76 цилиндров
-//
-//reg [6:0] cyl;   // цилиндр 0 - 79
-//reg hd;          // головка 
-//reg [3:0] sec;   // сектор 0 - 10
-//reg [1:0] drv;         // номер привода
+//  10 секторов (512 байт) на дорожк
+//  2 головы
+//  80 цилиндров
 //
 // полный абсолютный адрес    
-//
-// cyl*20+hd*10+sec   cyl*16+cyl*4 + hd*8+hd*2 + sec
-//                             *16   *4
-//   cyl*20+hd*10+sec        cyl>>4+cyl>>2
+// cyl*20+hd*10+sec   cyl*16+cyl*4 + hd*10 + sec
 //
 // Смещение головки
 wire [3:0] hd_offset = (hd == 1'b0)? 4'd0:4'd10; 
 // Смещение цилиндра cyl*20
-wire [11:0] cyl_offset = (cyl<<4)+(cyl<<2);
-// Смещение номера привода
-wire [12:0] drv_offset= (drv == 2'b00)? 13'h0:      // привод 0
-								(drv == 2'b01)? 13'h640:	 // привод 1 +1600
-								(drv == 2'b10)? 13'hc80:	 // привод 2 +3200					
-								13'h12c0;                   // привод 3 +4800
-
-assign sdcard_addr = start_offset + drv_offset + cyl_offset + hd_offset + sec;
+wire [10:0] cyl_offset = {cyl[6:0], 4'b0} + {2'b0, cyl[6:0], 2'b0};
+// Полное смещение от начала образа диска
+wire [10:0] fulloffset = cyl_offset + hd_offset + sec;
+// Абсолютный адрес блока на карте								
+assign sdcard_addr = {start_offset[22:13], drv[1:0], fulloffset[10:0]};
 
 endmodule
+
