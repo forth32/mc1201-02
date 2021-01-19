@@ -388,11 +388,9 @@ module sdspi (
                               sd_nextstate <= sd_idle ; 
                            end 
                         end
-               // wait for the data header to be sent in response to the read command; the header value is 0xfe, so actually there is just one start bit to read.
                sd_read_data_waitstart :
                         begin
                            if (sd_r1 == 7'b0000000) begin
-                              // FIXME, this can take long, but there should still be a timeout
                               if (sdcard_miso == 1'b0) begin
                                  sd_state <= sd_read_data ; 
                                  counter <= 15 ; 

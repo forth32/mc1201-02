@@ -15,8 +15,9 @@ char devname[100];
 char* buf;
 int bank=0,unit=0;
 char filename[100];
+int id;
 int i;
-uint32_t boffset, doffset, usize, cardoffset;
+uint32_t boffset, doffset, usize, cardoffset, realsize;
 char DD[4];
 char* outbuf;    
 int cyl;
@@ -42,21 +43,27 @@ DD[1]=toupper((argv[2][1]));
 DD[3]=0;
 
 // поиск устройства
-for(i=0;;i++) {
-    if (devtable[i].name == 0) {
+for(id=0;;id++) {
+    if (devtable[id].name == 0) {
         printf("Неверный тип устройства - %s",DD);
         return;
     }
-    if (strncmp(DD,devtable[i].name,2) == 0) {
-         doffset=devtable[i].doffset;
-         usize=devtable[i].usize;
+    if (strncmp(DD,devtable[id].name,2) == 0) {
+         doffset=devtable[id].doffset;
+         usize=devtable[id].usize;
+         realsize=devtable[id].realsize;
          break;
     }     
 }
 unit=atoi(argv[3]);
 bank=atoi(argv[4]);                      
 if (argc>5) strcpy(filename,argv[5]);
-else sprintf(filename,"B%i-%s%i.dsk",bank,devtable[i].name,unit);
+else sprintf(filename,"B%i-%s%i.dsk",bank,devtable[id].name,unit);
+
+if (unit > devtable[id].maxdev) {
+    printf("Недопустимый номер устройства - %i, максимально допустимый = %i",unit, devtable[id].maxdev);
+    return;
+}    
 
 in=fopen(filename,"r");
 if (in == 0) {
@@ -74,17 +81,17 @@ if (buf == 0) {
     printf("- недостаточно памяти под буфер\n");
     return;
 }
-
-if (strncmp(DD,"DX",2) != 0)  fread(buf,512,usize,in);
-else {
+memset(buf,0,usize*512);
+fread(buf,512,realsize,in);
+if (strncmp(DD,"DX",2) == 0)  {
     // преобразование буфера для DX-дисков
-    fread(buf,512,502,in);
-    outbuf=malloc(4096*512);
+    outbuf=malloc(usize*512);
+    memset(outbuf,0,usize*512);
     if (outbuf == 0) {
         printf("- недостаточно памяти под буфер\n");
         return;
     }
-    memset(outbuf,0,4096*512);
+    memset(outbuf,0,usize*512);
     for (cyl=0;cyl<77;cyl++) {
         for(sec=1;sec<27;sec++) {
             adr=((cyl<<5) + sec)*512;
@@ -99,7 +106,7 @@ fclose(in);
 
 // Запись образа на карту
 cardoffset=bank*banksize+doffset+unit*usize;
-printf("* Стартовый блок: %xh\n",cardoffset);
+printf("* Стартовый блок: %xh     Размер: %xh\n",cardoffset,usize);
 fseek(card,(cardoffset)*512,SEEK_SET);
 fwrite(buf,512,usize,card);
 fclose(card);

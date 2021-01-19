@@ -16,8 +16,9 @@ char* buf;
 char* outbuf;
 int bank=0,unit=0;
 char filename[100];
+int id;
 int i;
-uint32_t boffset, doffset, usize, cardoffset;
+uint32_t boffset, doffset, usize, cardoffset, realsize;
 char DD[4];
 int cyl;
 int sec;
@@ -42,21 +43,27 @@ DD[1]=toupper((argv[2][1]));
 DD[3]=0;
 
 // поиск устройства
-for(i=0;;i++) {
-    if (devtable[i].name == 0) {
+for(id=0;;id++) {
+    if (devtable[id].name == 0) {
         printf("Неверный тип устройства - %s\n",DD);
         return;
     }
-    if (strncmp(DD,devtable[i].name,2) == 0) {
-         doffset=devtable[i].doffset;
-         usize=devtable[i].usize;
+    if (strncmp(DD,devtable[id].name,2) == 0) {
+         doffset=devtable[id].doffset;
+         usize=devtable[id].usize;
+         realsize=devtable[id].realsize;
          break;
     }     
 }
 if (argc>3) unit=atoi(argv[3]);
 if (argc>4) bank=atoi(argv[4]);                      
 if (argc>5) strcpy(filename,argv[5]);
-else sprintf(filename,"B%i-%s%i.dsk",bank,devtable[i].name,unit);
+else sprintf(filename,"B%i-%s%i.dsk",bank,devtable[id].name,unit);
+
+if (unit > devtable[id].maxdev) {
+    printf("Недопустимый номер устройства - %i, максимально допустимый = %i",unit, devtable[id].maxdev);
+    return;
+}    
 
 out=fopen(filename,"w");
 if (out == 0) {
@@ -95,7 +102,6 @@ if (strncmp(DD,"DX",2) == 0) {
             for(i=0;i<256;i+=2) outbuf[outpos++]=*(buf+adr+i);
         }
     }
-usize=502;  // размер преобразованного буфера
 
 free(buf);
 buf=outbuf; // заменяем исходный буфер на преобразованный
@@ -103,7 +109,7 @@ buf=outbuf; // заменяем исходный буфер на преобра�
 printf("* Размер образа : %xh\n",usize);
 
 // записываем образ диска в выходной файл
-fwrite(buf,512,usize,out);
+fwrite(buf,512,realsize,out);
 fclose(out);
 free(buf);
 }

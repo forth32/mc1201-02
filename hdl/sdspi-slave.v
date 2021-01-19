@@ -54,7 +54,6 @@ module sdspi_slave (
    //****************************
 	// Машина состояний SDкарты
    //****************************
-   parameter[4:0] sd_reset = 0; 
    parameter[4:0] sd_sendcmd0 = 1; 
    parameter[4:0] sd_checkcmd0 = 2; 
    parameter[4:0] sd_checkcmd8 = 3; 
@@ -332,11 +331,9 @@ assign sdcard_cs=1'b0;    // карта всегда выбрана
                               sd_nextstate <= sd_idle ; 
                            end 
                         end
-               // wait for the data header to be sent in response to the read command; the header value is 0xfe, so actually there is just one start bit to read.
                sd_read_data_waitstart :
                         begin
                            if (sd_r1 == 7'b0000000) begin
-                              // FIXME, this can take long, but there should still be a timeout
                               if (sdcard_miso == 1'b0) begin
                                  sd_state <= sd_read_data ; 
                                  counter <= 15 ; 
@@ -459,10 +456,12 @@ assign sdcard_cs=1'b0;    // карта всегда выбрана
                         end
                sd_error :
                         begin
+                           read_done <= 1'b1 ;       // поднимаем флаг окончания 
                            card_error <= 1'b1 ; 
-                           if (read_start == 1'b1 | write_start == 1'b1)
-                              if (read_ack == 1'b1 | write_ack == 1'b1)  sd_state <= sd_idle ; 
-                              else     sd_state <= sd_reset ; 
+                           if ((read_ack == 1'b1) || (write_ack == 1'b1))  begin
+											sd_state <= sd_idle ; 
+											read_done <= 1'b0;
+										end	
                         end
             endcase 
          end 
