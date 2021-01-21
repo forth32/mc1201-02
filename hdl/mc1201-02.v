@@ -129,6 +129,7 @@ wire lpt_stb;
 wire dw_stb;
 wire rx_stb;
 wire my_stb;
+wire kgd_stb;
 
 // линии подтверждения обмена
 wire cpu_dev_ack;
@@ -144,6 +145,7 @@ wire rx_ack;
 wire rk11_dma_ack;
 wire my_ack;
 wire my_dma_ack;
+wire kgd_ack;
 
 //  Шины данных от периферии
 wire [15:0] uart1_dat;
@@ -156,6 +158,7 @@ wire [15:0] lpt_dat;
 wire [15:0] dw_dat;
 wire [15:0] rx_dat;
 wire [15:0] my_dat;
+wire [15:0] kgd_dat;
 
 // флаг готовности динамической памяти.
 wire 			dr_ready;									
@@ -205,23 +208,47 @@ reg			my_sdack;
 
 reg 			timer_on;		 // разрешение таймера
 
- 
-assign      sys_init = vm_init_out;
-assign      vm_halt  = console_switch;
+// линии невекторных прерываний 
+assign      sys_init = vm_init_out;				// сброс
+assign      vm_halt  = console_switch;       // переключатель программа-пульт
 assign      timer_irq  = i50Hz & timer_on;   // сигнал прерывания от таймера с маской разрешения
-
-// VGA
-wire vgared,vgagreen,vgablue;
-// выбор яркости каждого цвета - сигнал, подаваемый на видео-ЦАП для светящейся и темной точки.	
-assign vgag = (vgagreen == 1'b1) ? 6'b101111 : 6'b000000 ;
-assign vgab = (vgablue == 1'b1) ? 5'b11111 : 5'b00000 ;
-assign vgar = (vgared == 1'b1) ? 5'b11111 : 5'b00000 ;
 
 // пищалка
 wire nbuzzer;
 assign buzzer=~nbuzzer;
 
+// синхросигнал SD-карты
 assign sdcard_sclk=sdclock;
+
+//************************************
+//*            VGA
+//************************************
+
+// Линии текстового дисплея
+wire vgared_t,vgagreen_t,vgablue_t;  // видеосигналы
+wire vgah_t, vgav_t;           // синхроимпульсы
+
+// Линии графического дисплея
+wire vgah_g;        // строчный синхросингал
+wire vgav_g;        // кадровый синхросигнал 
+wire vgavideo_g;    // видеовыход 
+wire genable;       // переключатель текст-графика
+
+// Селектор источника видео
+wire vgagreen, vgablue, vgared;
+// цвета
+assign vgagreen = (genable == 0)? vgagreen_t:vgavideo_g;
+assign vgared   = (genable == 0)? vgared_t  :vgavideo_g;
+assign vgablue  = (genable == 0)? vgablue_t :vgavideo_g;
+// синхросигналы
+assign vgah = (genable == 0)? vgah_t : vgah_g;
+assign vgav = (genable == 0)? vgav_t : vgav_g;
+
+// выбор яркости каждого цвета  - сигнал, подаваемый на видео-ЦАП для светящейся и темной точки.	
+assign vgag = (vgagreen == 1'b1) ? 6'b111111 : 6'b000000 ;
+assign vgab = (vgablue == 1'b1) ? 5'b11111 : 5'b00000 ;
+assign vgar = (vgared == 1'b1) ? 5'b11110 : 5'b00000 ;
+
 
 //***************************************************
 //*    Кнопки
@@ -506,11 +533,11 @@ wbc_uart uart2
 //**********************************
 
 vt52 terminal(
-   .vgahs(vgah), 
-   .vgavs(vgav), 
-	.vgared(vgared),
-	.vgagreen(vgagreen),
-	.vgablue(vgablue),
+   .vgahs(vgah_t), 
+   .vgavs(vgav_t), 
+	.vgared(vgared_t),
+	.vgagreen(vgagreen_t),
+	.vgablue(vgablue_t),
    .tx(terminal_tx), 
    .rx(terminal_rx), 
    .ps2_clk(ps2_clk), 
@@ -520,6 +547,29 @@ vt52 terminal(
 	.initspeed(`TERMINAL_SPEED),
    .clk50(clk50), 
    .reset(terminal_rst)
+);
+
+//**********************************
+//*  Графическая подсистема КГД
+//**********************************
+kgd graphics(
+	.wb_clk_i(wb_clk),
+	.wb_rst_i(sys_init),
+	.wb_adr_i(wb_adr[2:0]),
+	.wb_dat_i(wb_out),
+   .wb_dat_o(kgd_dat),
+	.wb_cyc_i(wb_cyc),
+	.wb_we_i(wb_we),
+	.wb_stb_i(kgd_stb),
+	.wb_sel_i(wb_sel), 
+	.wb_ack_o(kgd_ack),
+	
+	.clk50 (clk50),
+	
+	.hsync(vgah_g),         // строчный синхросингал
+   .vsync(vgav_g),         // кадровый синхросигнал 
+   .vgavideo(vgavideo_g),      // видеовыход 
+	.genable(genable)
 );
 
 //**********************************
@@ -701,7 +751,7 @@ wire [15:0] my_dma_out;
 wire [3:0] mysddebug;
 
 
-kgd_my mydisk (
+fdd_my mydisk (
 
 // шина wishbone
    .wb_clk_i(wb_clk),	// тактовая частота шины
@@ -879,6 +929,7 @@ assign rk11_stb   = wb_stb & wb_cyc & (wb_adr[16:4] == (17'o177400 >> 4));   // 
 assign dw_stb     = wb_stb & wb_cyc & (wb_adr[16:5] == (17'o174000 >> 5));   // DW - 174000-174026
 assign rx_stb     = wb_stb & wb_cyc & (wb_adr[16:2] == (17'o177170 >> 2));   // DX - 177170-177172
 assign my_stb     = wb_stb & wb_cyc & (wb_adr[16:2] == (17'o172140 >> 2));   // MY - 172140-172142 / 177130-177132
+assign kgd_stb    = wb_stb & wb_cyc & (wb_adr[16:3] == (17'o176640 >> 3));   // КГД - 176640-176646
 
 // ROM с монитором 055/279 в теневой области с адреса 140000         
 assign rom_stb = wb_stb & wb_cyc & (wb_adr[16:13] == 4'b1110);
@@ -889,7 +940,7 @@ assign rom_stb = wb_stb & wb_cyc & (wb_adr[16:13] == 4'b1110);
 assign dram_stb = wb_stb & wb_cyc & ((wb_adr[15:13] != 3'b111) ^ wb_adr[16]);
 
 // Сигналы подтверждения - собираются через OR со всех устройств
-assign wb_ack     = rom_ack | dram_ack | uart1_ack | uart2_ack | rk11_ack | lpt_ack | dw_ack | rx_ack | my_ack;
+assign wb_ack     = rom_ack | dram_ack | uart1_ack | uart2_ack | rk11_ack | lpt_ack | dw_ack | rx_ack | my_ack | kgd_ack;
 
 // Мультиплексор выходных шин данных всех устройств
 assign wb_mux = 
@@ -899,9 +950,10 @@ assign wb_mux =
      | (uart2_stb ? uart2_dat : 16'o000000)
      | (rk11_stb  ? rk11_dat  : 16'o000000)
      | (lpt_stb   ? lpt_dat   : 16'o000000)
-     | (dw_stb    ? dw_dat   : 16'o000000)
-     | (rx_stb    ? rx_dat   : 16'o000000)
-     | (my_stb    ? my_dat   : 16'o000000)
+     | (dw_stb    ? dw_dat    : 16'o000000)
+     | (rx_stb    ? rx_dat    : 16'o000000)
+     | (my_stb    ? my_dat    : 16'o000000)
+     | (kgd_stb   ? kgd_dat   : 16'o000000)
 ;
 
 //**********************************
