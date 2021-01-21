@@ -51,11 +51,10 @@ wire reset=wb_rst_i;
 //********************************************
 //*   Модуль двухпортовой видеопамяти
 //********************************************
-kgdram vbuf(
+kgdvram vbuf(
 	.address_a(areg),
 	.address_b(yadr+col[10:1]-11'd20),
-	.clock_a(wb_clk_i),
-	.clock_b(clk50),
+	.clock(wb_clk_i),
 	.data_a(wb_dat_i[7:0]),
 	.wren_a(vbuf_write),
 	.wren_b(1'b0),
