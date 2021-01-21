@@ -3,7 +3,6 @@
 //
 module kgd (
 
-
 // шина wishbone
    input			         wb_clk_i,	// тактовая частота шины
 	input			         wb_rst_i,	// сброс
