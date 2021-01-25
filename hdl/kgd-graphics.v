@@ -5,7 +5,7 @@ module kgd (
 
 // шина wishbone
    input			         wb_clk_i,	// тактовая частота шины
-	input			         wb_rst_i,	// сброс
+	input			         wb_rst_i,	// сброс интерфейсного блока
 	input	 [2:0]           wb_adr_i,	// адрес 
 	input	 [15:0]          wb_dat_i,	// входные данные
    output reg [15:0]	     wb_dat_o,	// выходные данные
@@ -18,11 +18,11 @@ module kgd (
    input clk50,                // тактовый сигнал 50 Мгц
 	
 // VGA      
-   output reg hsync,        // строчный синхросингал
-   output reg vsync,        // кадровый синхросигнал 
    output vgavideo,             // видеовыход 
 // Управление
-	output genable		// переключение дисплея на графический контроллер
+	input	 vreset,			// сброс графического блока
+	output genable,		// подключение графического контроллера к дисплею
+	output tdisable		// отключение графического контроллера от дисплея
 );
 
 
@@ -30,6 +30,7 @@ module kgd (
 reg g_on;    // разрешение графики
 reg t_off;	 // запрет текста
 assign genable=g_on;
+assign tdisable=t_off;
 
 // регистр адреса
 reg [13:0] areg;
@@ -45,7 +46,6 @@ wire [7:0] vbufdata;
 wire bus_strobe = wb_cyc_i & wb_stb_i;         // строб цикла шины
 wire bus_read_req = bus_strobe & ~wb_we_i;     // запрос чтения
 wire bus_write_req = bus_strobe & wb_we_i;     // запрос записи
-wire reset=wb_rst_i;
 
 //********************************************
 //*   Модуль двухпортовой видеопамяти
@@ -83,7 +83,7 @@ always @(posedge wb_clk_i or posedge wb_rst_i)
 //* Обработка шинных транзакций
 //******************************************	
 always @(posedge wb_clk_i) 
-	if (reset == 1'b1) begin
+	if (wb_rst_i == 1'b1) begin
 		g_on <= 1'b0;
 		t_off <= 1'b0;
 		areg <= 14'o0;
@@ -147,13 +147,11 @@ reg [16:0] yadr; // адрес первого бита текущей строк
 //* Процесс попиксельной обработки
 //**********************************  
 always @(posedge clk50) 
-  if (reset == 1'b1) begin
+  if (vreset == 1'b1) begin
     // сброс контроллера
     col <= 11'o0;
 	 row <= 10'o0;
 	 vout <= 1'b0;
-	 hsync <= 1'b0;
-	 vsync <= 1'b0;
 	 yadr <= 17'd0;
   end
   else begin
@@ -199,10 +197,6 @@ always @(posedge clk50)
 		vout <= videobit;  // выводим теущий бит из видеопамяти на экран
   end	
   
-  // Строчный синхроиспульс
-  if (col > 11'd927) hsync <= 1'b1;
-  else hsync <= 1'b0;
-
   //*********************************
   //*  Кадровая развертка
   //*********************************
@@ -215,10 +209,6 @@ always @(posedge clk50)
   //  51 - это 23 (само черное поле) + 28 (неиспользуемые графические строки)
   if ((row < 10'd51) || (row > 10'd622)) vblank <= 1'b0;  
   else vblank <= 1'b1;
-  
-  // кадровый синхроимпульс
-  if (row > 10'd624) vsync <= 1'b1;
-  else vsync <= 1'b0;
 end  
 
 endmodule	

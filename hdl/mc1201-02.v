@@ -227,23 +227,18 @@ assign sdcard_sclk=sdclock;
 
 // Линии текстового дисплея
 wire vgared_t,vgagreen_t,vgablue_t;  // видеосигналы
-wire vgah_t, vgav_t;           // синхроимпульсы
 
 // Линии графического дисплея
-wire vgah_g;        // строчный синхросингал
-wire vgav_g;        // кадровый синхросигнал 
 wire vgavideo_g;    // видеовыход 
-wire genable;       // переключатель текст-графика
+wire genable;       // включение графического видеовыхода
+wire tdisable;		  // отключение текстового видеовыхода
 
 // Селектор источника видео
 wire vgagreen, vgablue, vgared;
-// цвета
-assign vgagreen = (genable == 0)? vgagreen_t:vgavideo_g;
-assign vgared   = (genable == 0)? vgared_t  :vgavideo_g;
-assign vgablue  = (genable == 0)? vgablue_t :vgavideo_g;
-// синхросигналы
-assign vgah = (genable == 0)? vgah_t : vgah_g;
-assign vgav = (genable == 0)? vgav_t : vgav_g;
+// цвета - складываем видеопотоки от обоих видеоконтроллеров
+assign vgagreen = ((genable == 1)? vgavideo_g: 1'b0) | ((tdisable == 1'b0)? vgagreen_t: 1'b0);
+assign vgared   = ((genable == 1)? vgavideo_g: 1'b0) | ((tdisable == 1'b0)? vgared_t: 1'b0);
+assign vgablue  = ((genable == 1)? vgavideo_g: 1'b0) | ((tdisable == 1'b0)? vgablue_t: 1'b0);
 
 // выбор яркости каждого цвета  - сигнал, подаваемый на видео-ЦАП для светящейся и темной точки.	
 assign vgag = (vgagreen == 1'b1) ? 6'b111111 : 6'b000000 ;
@@ -542,20 +537,24 @@ wbc_uart uart2
 //**********************************
 
 ksm terminal(
-   .vgahs(vgah_t), 
-   .vgavs(vgav_t), 
+	// VGA
+   .vgahs(vgah), 
+   .vgavs(vgav), 
 	.vgared(vgared_t),
 	.vgagreen(vgagreen_t),
 	.vgablue(vgablue_t),
+	// Последовательный порт
    .tx(terminal_tx), 
    .rx(terminal_rx), 
+	// Клавиатура
    .ps2_clk(ps2_clk), 
    .ps2_data(ps2_data), 
-	.buzzer(nbuzzer),
-	.vspeed(vspeed),
-	.initspeed(`TERMINAL_SPEED),
+	
+	.buzzer(nbuzzer),		// пищалка
+	.vspeed(vspeed),		// текущая скорость порта
+	.initspeed(`TERMINAL_SPEED), // начальная скорость порта
    .clk50(clk50), 
-   .reset(terminal_rst)
+   .reset(terminal_rst)		// сброс видеоподсистемы
 );
 
 //**********************************
@@ -576,10 +575,10 @@ kgd graphics(
 	
 	.clk50 (clk50),
 	
-	.hsync(vgah_g),         // строчный синхросингал
-   .vsync(vgav_g),         // кадровый синхросигнал 
+	.vreset(terminal_rst),  // сброс графической подсистемы
    .vgavideo(vgavideo_g),      // видеовыход 
-	.genable(genable)
+	.tdisable(tdisable),		// отключение тектового экрана
+	.genable(genable) 		// подключение графического экрана
 );
 `else 
 assign kgd_ack=1'b0;
