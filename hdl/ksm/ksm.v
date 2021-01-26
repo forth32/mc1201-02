@@ -31,6 +31,10 @@ module ksm (
 	// пищалка
 	output buzzer,
 	
+// синхронизация с КГД
+	output [10:0] col,  // колонка X, 0-1055
+	output [9:0]  row,  // строка Y, 0-627
+	
 	output [2:0] vspeed,   // индекс скорости порта
 	input [2:0] initspeed, // индекс начальной скорости
    input clk50,    // 50 MHz
@@ -242,6 +246,8 @@ vga video (
    .vgab(vgablue),          // синий цвет
 	.cursor_on(vtcsr[2]),    // видимость курсора
 	.cursor_type(vtcsr[3]),  // форма курсора
+	.col(col),
+	.row(row),
 	.flash(vtcsr[5]),        // импульсы мерцания символов
    .clk50(clk50)
 );

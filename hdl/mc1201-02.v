@@ -535,6 +535,8 @@ wbc_uart uart2
 //**********************************
 //*   Текстовый терминал КСМ
 //**********************************
+wire [10:0] col;  // колонка X, 0-1055
+wire [9:0]  row;  // строка Y, 0-627
 
 ksm terminal(
 	// VGA
@@ -551,8 +553,13 @@ ksm terminal(
    .ps2_data(ps2_data), 
 	
 	.buzzer(nbuzzer),		// пищалка
+	
 	.vspeed(vspeed),		// текущая скорость порта
 	.initspeed(`TERMINAL_SPEED), // начальная скорость порта
+	
+	.col(col),
+	.row(row),
+	
    .clk50(clk50), 
    .reset(terminal_rst)		// сброс видеоподсистемы
 );
@@ -577,6 +584,8 @@ kgd graphics(
 	
 	.vreset(terminal_rst),  // сброс графической подсистемы
    .vgavideo(vgavideo_g),      // видеовыход 
+	.col(col),
+	.row(row),
 	.tdisable(tdisable),		// отключение тектового экрана
 	.genable(genable) 		// подключение графического экрана
 );
