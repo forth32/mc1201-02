@@ -299,7 +299,7 @@ wbc_rst reset
 //*************************************
 
 // счетчик замедления процессора
-reg [3:0] cpuslow;
+reg [4:0] cpuslow;
 always @ (posedge sys_clk_p) cpuslow <= cpuslow + 1'b1;
 wire cpu_clk_enable=&cpuslow;  // формирователь импульса с заполнением 1/16
 
@@ -584,13 +584,15 @@ kgd graphics(
 	
 	.vreset(terminal_rst),  // сброс графической подсистемы
    .vgavideo(vgavideo_g),      // видеовыход 
-	.col(col),
-	.row(row),
+	.col(col),					// счетчик видеостолбцов
+	.row(row),					// счетчик видеострок
 	.tdisable(tdisable),		// отключение тектового экрана
 	.genable(genable) 		// подключение графического экрана
 );
 `else 
 assign kgd_ack=1'b0;
+assign tdisable=1'b0;
+assign genable=1'b0;
 `endif
 
 //**********************************
