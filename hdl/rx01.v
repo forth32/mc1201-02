@@ -3,18 +3,18 @@ module rx01 (
 // шина wishbone
    input                  wb_clk_i,   // тактовая частота шины
    input                  wb_rst_i,   // сброс
-   input    [1:0]           wb_adr_i,   // адрес 
-   input    [15:0]          wb_dat_i,   // входные данные
-   output reg [15:0]        wb_dat_o,   // выходные данные
-   input                wb_cyc_i,   // начало цикла шины
-   input                wb_we_i,      // разрешение записи (0 - чтение)
-   input                wb_stb_i,   // строб цикла шины
-   input    [1:0]           wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
-   output reg              wb_ack_o,   // подтверждение выбора устройства
+   input    [1:0]         wb_adr_i,   // адрес 
+   input    [15:0]        wb_dat_i,   // входные данные
+   output reg [15:0]      wb_dat_o,   // выходные данные
+   input                  wb_cyc_i,   // начало цикла шины
+   input                  wb_we_i,      // разрешение записи (0 - чтение)
+   input                  wb_stb_i,   // строб цикла шины
+   input    [1:0]         wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
+   output reg             wb_ack_o,   // подтверждение выбора устройства
 
 // обработка прерывания   
    output reg           irq,         // запрос
-   input                 iack,       // подтверждение
+   input                iack,       // подтверждение
    
 // интерфейс SD-карты
    output sdcard_cs, 
@@ -191,7 +191,7 @@ always @(posedge wb_clk_i)   begin
 
                         end
                // Формирование запроса на прерывание         
-               i_req :           if (ide == 1'b0)    interrupt_state <= i_idle ;    
+               i_req :          if (ide == 1'b0)    interrupt_state <= i_idle ;    
                                 else if (iack == 1'b1) begin
                                     // если получено подтверждение прерывания от процессора
                                     irq <= 1'b0 ;               // снимаем запрос
