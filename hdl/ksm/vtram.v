@@ -16,7 +16,7 @@ wire [1:0] ena;
 reg [1:0] ack;
 
 vtmem ram(
-   .address(wb_adr_i[12:1]),
+   .address(wb_adr_i[11:1]),
    .byteena(ena),
    .clock(wb_clk_i),
    .data(wb_dat_i),

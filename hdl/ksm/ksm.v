@@ -316,7 +316,7 @@ wbc_vic #(.N(3)) svic   (
 
 // Формирователь сигналов выборки устройств
 assign uart_stb	= wb_stb & wb_cyc & (wb_adr[15:3] == (16'o177560 >> 3)); // UART DL11 - 177560-177567
-assign vtram_stb = wb_stb & wb_cyc & (wb_adr[15:13] == 3'b000);// RAM 000000-017777
+assign vtram_stb = wb_stb & wb_cyc & (wb_adr[15:12] == 4'b0000);// RAM 000000-017777
 assign vga_stb = wb_stb & wb_cyc & (wb_adr[15:13] == 3'b110);  // видеопамять 140000 - 156200/157777
 assign vregs_stb = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o170000>>2)); // регистры курсора и управления видеоконтроллером 170000-170002
 assign ps2_stb = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o171000>>2));   // контроллер клавиатуры PS/2 171000-171002
