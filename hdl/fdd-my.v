@@ -41,7 +41,7 @@ module fdd_my (
    input      sdclock,   
    
 // Адрес начала банка на карте
-   input [22:0] start_offset,
+   input [26:0] start_offset,
    
 // отладочные сигналы
    output [3:0] sdcard_debug
@@ -138,7 +138,7 @@ reg err_cyl1;    // неправильный номер цилиндра, обн
 wire err_cyl = err_cyl0 | err_cyl1; // объединенный флаг ошибки
 
 // интерфейс к SDSPI
-wire [22:0] sdcard_addr;  // адрес сектора карты
+wire [26:0] sdcard_addr;  // адрес сектора карты
 wire sdcard_read_done;    // флаг окончагия чтения
 wire sdcard_write_done;   // флаг окончания записи
 wire sdcard_error;        // флаг ошибки
@@ -819,7 +819,7 @@ wire [10:0] cyl_offset = {cyl[6:0], 4'b0} + {2'b0, cyl[6:0], 2'b0};
 // Полное смещение от начала образа диска
 wire [10:0] fulloffset = cyl_offset + hd_offset + sec;
 // Абсолютный адрес блока на карте                        
-assign sdcard_addr = {start_offset[22:13], drv[1:0], fulloffset[10:0]};
+assign sdcard_addr = {start_offset[26:13], drv[1:0], fulloffset[10:0]};
 
 endmodule
 

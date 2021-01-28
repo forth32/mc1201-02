@@ -28,7 +28,7 @@ module rx01 (
    input sdclock,   
    
 // Адрес начала банка на карте
-   input [22:0] start_offset,
+   input [26:0] start_offset,
    
 // отладочные сигналы
    output [3:0] sdcard_debug
@@ -104,7 +104,7 @@ reg io_phase;
 reg delflag;     // признак удаленного сектора
       
 // интерфейс к SDSPI
-wire [22:0] sdcard_addr;    // адрес сектора карты
+wire [26:0] sdcard_addr;    // адрес сектора карты
 wire sdcard_read_done;      // флаг окончагия чтения
 wire sdcard_write_done;     // флаг окончания записи
 wire sdcard_error;          // флаг ошибки

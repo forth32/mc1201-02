@@ -12,7 +12,7 @@ module sdspi (
    
    output reg[3:0] sdcard_debug,       // отладочные сигналы
 
-   input[22:0]     sdcard_addr,        // адрес сектора карты
+   input[26:0]     sdcard_addr,        // адрес сектора карты
    output reg      sdcard_idle,        // признак готовности контроллера
    input           sdcard_read_start,  // строб начала чтения
    input           sdcard_read_ack,    // флаг подтверждения окончания чтения
@@ -278,7 +278,7 @@ module sdspi (
                                idle <= 1'b0 ;    // снимаем флаг готовности
                                counter <= 48 ;   // длина команды
                                // команда чтения сектора для SDHC
-                               sd_cmd <= {8'h51, 9'b000000000, sdcard_addr, 8'h01} ; 
+                               sd_cmd <= {8'h51, 5'b00000, sdcard_addr, 8'h01} ; 
                                sd_state <= sd_send_cmd ; // отправляем команду
                                sd_nextstate <= sd_read_data_waitstart ; // и переходим к ожиданию стартового токена
                                sdcard_debug[2] <= 1'b1 ; 
@@ -293,7 +293,7 @@ module sdspi (
                                card_error <= 1'b0 ; 
                                idle <= 1'b0 ; 
                                counter <= 48 ; 
-                               sd_cmd <= {8'h58 , 9'b000000000, sdcard_addr, 8'h01 } ; 
+                               sd_cmd <= {8'h58 , 5'b00000, sdcard_addr, 8'h01 } ; 
                                sd_state <= sd_send_cmd ; 
                                sd_nextstate <= sd_write_checkresponse ; 
                                sdcard_debug[3] <= 1'b1 ; 

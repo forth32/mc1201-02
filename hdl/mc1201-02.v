@@ -706,7 +706,7 @@ rk11 rkdisk (
    .sdack(rk_sdack),
    
 // Адрес массива дисков на карте
-   .start_offset({2'b00,diskbank,18'h0}),
+   .start_offset({6'b000000,diskbank,18'h0}),
 
 // отладочные сигналы
    .sdcard_debug(rksddebug)
@@ -754,7 +754,7 @@ dw hdd(
    .sdack(dw_sdack),
 
 // Адрес массива дисков на карте
-   .start_offset({2'b00,diskbank,18'hc000}),
+   .start_offset({6'b000000,diskbank,18'hc000}),
    
 // отладочные сигналы
    .sdcard_debug(dwsddebug)
@@ -803,7 +803,7 @@ rx01 dxdisk (
    .sdclock(sdclock),
    
 // Адрес массива дисков на карте
-   .start_offset({2'b00,diskbank,18'h2c000}),
+   .start_offset({6'b000000,diskbank,18'h2c000}),
    
 // отладочные сигналы
    .sdcard_debug(rxsddebug)
@@ -872,7 +872,7 @@ fdd_my mydisk (
    .sdack(my_sdack),
    
 // Адрес массива дисков на карте
-   .start_offset({2'b00,diskbank,18'h2e000}),
+   .start_offset({6'b000000,diskbank,18'h2e000}),
 
 // отладочные сигналы
    .sdcard_debug(mysddebug)
