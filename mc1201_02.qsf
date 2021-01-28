@@ -326,23 +326,20 @@ set_location_assignment PIN_D16 -to led[3]
 set_global_assignment -name EDA_TEST_BENCH_FILE tb/mc1201_02_tbench.v -section_id mc1201
 
 
-set_global_assignment -name VERILOG_FILE "hdl/kgd-graphics.v"
 set_global_assignment -name VERILOG_FILE "hdl/mc1201-02.v"
+set_global_assignment -name VERILOG_FILE "hdl/kgd-graphics.v"
+set_global_assignment -name VERILOG_FILE hdl/ksm/vtreset.v
+set_global_assignment -name VERILOG_FILE hdl/ksm/vtram.v
+set_global_assignment -name VERILOG_FILE hdl/ksm/ksm.v
+set_global_assignment -name VERILOG_FILE hdl/ksm/vregs.v
+set_global_assignment -name VERILOG_FILE hdl/ksm/vga.v
+set_global_assignment -name VERILOG_FILE hdl/ksm/ps2.v
 set_global_assignment -name VERILOG_FILE "hdl/fdd-my.v"
-set_global_assignment -name QIP_FILE rom055.qip
 set_global_assignment -name VERILOG_FILE hdl/rx01.v
 set_global_assignment -name VERILOG_FILE hdl/dw.v
 set_global_assignment -name VERILOG_FILE hdl/rk11.v
 set_global_assignment -name VERILOG_FILE "hdl/sdspi-slave.v"
 set_global_assignment -name VERILOG_FILE "hdl/sdspi-master.v"
-set_global_assignment -name VERILOG_FILE hdl/ksm/vtreset.v
-set_global_assignment -name VERILOG_FILE hdl/ksm/vtram.v
-set_global_assignment -name QIP_FILE hdl/ksm/vtmem.qip
-set_global_assignment -name VERILOG_FILE hdl/ksm/ksm.v
-set_global_assignment -name VERILOG_FILE hdl/ksm/vregs.v
-set_global_assignment -name VERILOG_FILE hdl/ksm/vga.v
-set_global_assignment -name VERILOG_FILE hdl/ksm/ps2.v
-set_global_assignment -name QIP_FILE hdl/ksm/fontrom.qip
 set_global_assignment -name VERILOG_FILE "hdl/irpr-centronix.v"
 set_global_assignment -name VERILOG_FILE hdl/wbc_vic.v
 set_global_assignment -name VERILOG_FILE hdl/wbc_uart.v
@@ -350,13 +347,15 @@ set_global_assignment -name VERILOG_FILE hdl/wbc_rst.v
 set_global_assignment -name VERILOG_FILE hdl/vm2_wb.v
 set_global_assignment -name VERILOG_FILE hdl/vm2_plm.v
 set_global_assignment -name VERILOG_FILE hdl/memory.v
-set_global_assignment -name QIP_FILE pll100.qip
 set_global_assignment -name VERILOG_FILE hdl/sdram_ip/sdram_wr_data.v
 set_global_assignment -name VERILOG_FILE hdl/sdram_ip/sdram_top.v
 set_global_assignment -name VERILOG_FILE hdl/sdram_ip/sdram_para.v
 set_global_assignment -name VERILOG_FILE hdl/sdram_ip/sdram_ctrl.v
 set_global_assignment -name VERILOG_FILE hdl/sdram_ip/sdram_cmd.v
 set_global_assignment -name SDC_FILE mc1201.sdc
-set_global_assignment -name QIP_FILE kgdvram.qip
-set_global_assignment -name SLD_FILE db/stp1_auto_stripped.stp
+set_global_assignment -name QIP_FILE "ip-components/vtmem.qip"
+set_global_assignment -name QIP_FILE "ip-components/rom055.qip"
+set_global_assignment -name QIP_FILE "ip-components/pll100.qip"
+set_global_assignment -name QIP_FILE "ip-components/kgdvram.qip"
+set_global_assignment -name QIP_FILE "ip-components/fontrom.qip"
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
