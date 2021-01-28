@@ -20,7 +20,7 @@ module wbc_rst #(parameter
                               //
    output reg  sys_dclo,      // DCLO output
    output reg  sys_aclo,      // ACLO output
-	output 	   global_reset,  // Выход сигнала сброса без учета sys_read, 1 - сброс, 0 - работа
+   output       global_reset,  // Выход сигнала сброса без учета sys_read, 1 - сброс, 0 - работа
    output reg  sys_irq        // Сигнал прерывания с частотой 50Гц для таймера
 );
 localparam US_COUNTER_WIDTH = log2(REFCLK/1000000);
@@ -201,7 +201,7 @@ begin
       // One millisecond interval counter
       //
       if (ena_us)  begin
-				
+            
          //
          // System Timer interrupt
          //

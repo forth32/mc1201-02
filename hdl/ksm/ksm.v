@@ -134,18 +134,17 @@ vm2_wb cpu
 (
 // Синхросигналы  
    .vm_clk_p(clk50),               // Положительный синхросигнал
-   .vm_clk_n(~clk50),               // Отрицательный синхросигнал
-   .vm_clk_slow(1'b0),                 // Режим медленной синхронизации (для симуляции)
+   .vm_clk_n(~clk50),              // Отрицательный синхросигнал
+   .vm_clk_slow(1'b0),             // Режим задержки синхросигнала
 
 // Шина Wishbone                                       
 	.wbm_gnt_i(1'b1),							// 1 - разрешение cpu работать с шиной
-	                                    // 0 - DMA с внешними устройствами, cpu отключен от шины
 	.wbm_adr_o(wb_adr),						// выход шины адреса
-	.wbm_dat_o(wb_out),				// выход шины данных
+	.wbm_dat_o(wb_out),				      // выход шины данных
    .wbm_dat_i(wb_mux),     				// вход шины данных
 	.wbm_cyc_o(wb_cyc),						// Строб цила wishbone
-	.wbm_we_o(wb_we),						// разрешение записи
-	.wbm_sel_o(wb_sel),					// выбор байтов для передачи
+	.wbm_we_o(wb_we),						   // разрешение записи
+	.wbm_sel_o(wb_sel),					   // выбор байтов для передачи
 	.wbm_stb_o(wb_stb),						// строб данных
 	.wbm_ack_i(wb_ack),						// вход подтверждения данных
 
@@ -194,7 +193,7 @@ assign  baud =
   (vspeed == 3'd4)  ?  32'd47:  // 19200
   (vspeed == 3'd5)  ?  32'd23:  // 38400
   (vspeed == 3'd6)  ?  32'd15:  // 57600
-                       32'd7;  // 115200
+                        32'd7;  // 115200
 
 wbc_uart #(.REFCLK(50000000)) uart
 (
@@ -239,15 +238,15 @@ vga video (
 	.wb_ack_o(vga_ack),
 	.wb_sel_i(wb_sel),
    .cursor(cursor_adr),     // текущий адрес курсора
-   .hsync(vgahs),       // строчный синхросигнал
-   .vsync(vgavs),       // кадровый синхросигнал
+   .hsync(vgahs),           // строчный синхросигнал
+   .vsync(vgavs),           // кадровый синхросигнал
    .vgag(vgagreen),         // зеленый цвет
    .vgar(vgared),           // красный цвет
    .vgab(vgablue),          // синий цвет
 	.cursor_on(vtcsr[2]),    // видимость курсора
 	.cursor_type(vtcsr[3]),  // форма курсора
-	.col(col),
-	.row(row),
+	.col(col),               // текущая колонка экрана
+	.row(row),               // текущая строка экрана
 	.flash(vtcsr[5]),        // импульсы мерцания символов
    .clk50(clk50)
 );
@@ -316,10 +315,10 @@ wbc_vic #(.N(3)) svic   (
 
 // Формирователь сигналов выборки устройств
 assign uart_stb	= wb_stb & wb_cyc & (wb_adr[15:3] == (16'o177560 >> 3)); // UART DL11 - 177560-177567
-assign vtram_stb = wb_stb & wb_cyc & (wb_adr[15:12] == 4'b0000);// RAM 000000-017777
-assign vga_stb = wb_stb & wb_cyc & (wb_adr[15:13] == 3'b110);  // видеопамять 140000 - 156200/157777
-assign vregs_stb = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o170000>>2)); // регистры курсора и управления видеоконтроллером 170000-170002
-assign ps2_stb = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o171000>>2));   // контроллер клавиатуры PS/2 171000-171002
+assign vtram_stb = wb_stb & wb_cyc & (wb_adr[15:12] == 4'b0000);           // RAM 000000-017777
+assign vga_stb = wb_stb & wb_cyc & (wb_adr[15:13] == 3'b110);              // видеопамять 140000 - 156200/157777
+assign vregs_stb = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o170000>>2));    // регистры курсора и управления видеоконтроллером 170000-170002
+assign ps2_stb = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o171000>>2));      // контроллер клавиатуры PS/2 171000-171002
 
 // Сигналы подтверждения - собираются через OR со всех устройств
 assign wb_ack	= vtram_ack | uart_ack | vga_ack | vregs_ack | ps2_ack;

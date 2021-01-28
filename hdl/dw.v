@@ -4,38 +4,38 @@
 module dw (
 
 // шина wishbone
-   input			         wb_clk_i,	// тактовая частота шины
-	input			         wb_rst_i,	// сброс
-	input	 [4:0]           wb_adr_i,	// адрес 
-	input	 [15:0]          wb_dat_i,	// входные данные
-   output reg [15:0]	     wb_dat_o,	// выходные данные
-	input					 wb_cyc_i,	// начало цикла шины
-	input					 wb_we_i,		// разрешение записи (0 - чтение)
-	input					 wb_stb_i,	// строб цикла шины
-	input	 [1:0]           wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
-	output reg			     wb_ack_o,	// подтверждение выбора устройства
+   input                  wb_clk_i,   // тактовая частота шины
+   input                  wb_rst_i,   // сброс
+   input    [4:0]           wb_adr_i,   // адрес 
+   input    [15:0]          wb_dat_i,   // входные данные
+   output reg [15:0]        wb_dat_o,   // выходные данные
+   input                wb_cyc_i,   // начало цикла шины
+   input                wb_we_i,      // разрешение записи (0 - чтение)
+   input                wb_stb_i,   // строб цикла шины
+   input    [1:0]           wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
+   output reg              wb_ack_o,   // подтверждение выбора устройства
 
-// обработка прерывания	
-	output reg			     irq,	      // запрос
-	input				     iack,    	// подтверждение
-	
+// обработка прерывания   
+   output reg              irq,         // запрос
+   input                 iack,       // подтверждение
+   
 // интерфейс SD-карты
    output sdcard_cs, 
    output sdcard_mosi, 
    output sdcard_sclk, 
    input sdcard_miso, 
-	output reg sdreq,			// запрос доступа к карте
-	input	sdack,				// подтверждение доступа к карте
-	
+   output reg sdreq,         // запрос доступа к карте
+   input   sdack,            // подтверждение доступа к карте
+   
 // тактирование SD-карты
-   input sdclock,	
+   input sdclock,   
 
 // Адрес начала банка на карте
-	input [22:0] start_offset,
-	
+   input [22:0] start_offset,
+   
 // отладочные сигналы
    output [3:0] sdcard_debug
-	); 
+   ); 
 //-----------------------------------------------
 //  Регистры контроллера
 //
@@ -90,7 +90,7 @@ module dw (
 //-----------------------------------------------
 
 // Сигналы упраления обменом с шиной
-	
+   
 wire bus_strobe = wb_cyc_i & wb_stb_i;         // строб цикла шины
 wire bus_read_req = bus_strobe & ~wb_we_i;     // запрос чтения
 wire bus_write_req = bus_strobe & wb_we_i;     // запрос записи
@@ -118,7 +118,7 @@ reg [7:0] cmd; // код команды
 
 reg cmderr;  // флаг ошибки выполнения команды
 reg rstreq;  // триггер запроса на программный сброс контроллера
-		
+      
 // интерфейс к SDSPI
 wire [22:0] sdcard_addr;        // адрес сектора карты
 wire sdcard_read_done;    // флаг окончагия чтения
@@ -149,23 +149,23 @@ parameter[2:0] w_skip=6;
 //***********************************************
 
 sdspi_slave sd1 (
-	   // интерфейс к карте
+      // интерфейс к карте
       .sdcard_cs(sdcard_cs), 
       .sdcard_mosi(sdcard_mosi), 
       .sdcard_sclk(sdcard_sclk), 
       .sdcard_miso(sdcard_miso),
-      .sdcard_debug(sdcard_debug), 	              // информационные индикаторы	
-	
+      .sdcard_debug(sdcard_debug),                  // информационные индикаторы   
+   
       .sdcard_addr(sdcard_addr),                      // адрес блока на карте
       .sdcard_idle(sdcard_idle),                  // сигнал готовности модуля к обмену
-		
-		// сигналы управления чтением 
+      
+      // сигналы управления чтением 
       .sdcard_read_start(read_start),       // строб начала чтения
       .sdcard_read_ack(sdcard_read_ack),           // флаг подтверждения команды чтения
       .sdcard_read_done(sdcard_read_done),         // флаг окончагия чтения
       
-		// сигналы управления записью
-		.sdcard_write_start(write_start),     // строб начала записи
+      // сигналы управления записью
+      .sdcard_write_start(write_start),     // строб начала записи
       .sdcard_write_ack(sdcard_write_ack),         // флаг подтверждения команды записи
       .sdcard_write_done(sdcard_write_done),       // флаг окончания записи
       .sdcard_error(sdcard_error),                 // флаг ошибки
@@ -174,14 +174,14 @@ sdspi_slave sd1 (
       .sdcard_xfer_addr(sdcard_xfer_addr),         // текущий адрес в буферах чтения и записи
       .sdcard_xfer_out(sdcard_xfer_out),           // слово, читаемое из буфера чтения
       .sdcard_xfer_in(sdcard_xfer_in),             // слово, записываемое в буфер записи
-      .sdcard_xfer_write(drq),				         // разрешение записи буфера
+      .sdcard_xfer_write(drq),                     // разрешение записи буфера
       .controller_clk(wb_clk_i),                   // синхросигнал общей шины
       .reset(reset),                               // сброс
-		.sdclk(sdclock)                               // синхросигнал SD-карты
+      .sdclk(sdclock)                               // синхросигнал SD-карты
 ); 
-	
+   
 //**************************************
-// формирователь ответа на цикл шины	
+// формирователь ответа на цикл шины   
 //**************************************
 wire reply=wb_cyc_i & wb_stb_i & ~wb_ack_o;
 
@@ -197,35 +197,35 @@ always @(posedge wb_clk_i or posedge wb_rst_i)
 //**************************************************
 always @(posedge wb_clk_i)  
       if (reset == 1'b1 || rstreq == 1'b1) begin
-		 // сброс системы
+       // сброс системы
          interrupt_state <= i_idle ; 
          irq <= 1'b0 ;    // снимаем запрос на прерывания
       end
-		
+      
       else   begin
         //******************************
         //* обработка прерывания
         //******************************
         case (interrupt_state)
- 		         // нет активного прерывания
+                // нет активного прерывания
               i_idle :
                         begin
-						   //  Если поднят флаг A или B - поднимаем триггер прерывания
+                     //  Если поднят флаг A или B - поднимаем триггер прерывания
                            if ((ide ==1) & (rqa == 1 | drq== 1))  begin
                               interrupt_state <= i_req ; 
                               irq <= 1'b1 ;    // запрос на прерывание
                            end 
-									else	irq <= 1'b0 ;    // снимаем запрос на прерывания
+                           else   irq <= 1'b0 ;    // снимаем запрос на прерывания
 
                         end
-					// Формирование запроса на прерывание			
-               i_req :			  if (ide == 0) interrupt_state <= i_idle ; 	
+               // Формирование запроса на прерывание         
+               i_req :           if (ide == 0) interrupt_state <= i_idle ;    
                                 else if (iack == 1'b1) begin
                                     // если получено подтверждение прерывания от процессора
                                     irq <= 1'b0 ;               // снимаем запрос
                                     interrupt_state <= i_wait ; // переходим к ожиданию окончания обработки
                                 end 
-					// Ожидание окончания обработки прерывания			
+               // Ожидание окончания обработки прерывания         
                i_wait :
                            if (iack == 1'b0)  interrupt_state <= i_idle ; 
        endcase
@@ -236,85 +236,85 @@ end
 //**************************************************
 always @(posedge wb_clk_i)  
       if (reset == 1'b1 || rstreq == 1'b1) begin
-		 // сброс системы
+       // сброс системы
          start <= 1'b0 ; 
-			rqa <= 1'b1;
+         rqa <= 1'b1;
          ide <= 1'b0;
          cmderr <= 1'b0;
          drq <= 1'b0;
          rstreq <= 1'b0;
-			busy <= 1'b0;
-			cyl <= 10'o0;
-			hd <= 3'o0;
-		   sec <= 5'o0;
-			read_start <= 1'b0;
-			sdcard_read_ack <= 1'b0;
-			write_start <= 1'b0;
-			sdcard_write_ack <= 1'b0;
-			wstate <= w_prepare;
-			write_error <= 1'b0;
-			sdreq <= 1'b0;
+         busy <= 1'b0;
+         cyl <= 10'o0;
+         hd <= 3'o0;
+         sec <= 5'o0;
+         read_start <= 1'b0;
+         sdcard_read_ack <= 1'b0;
+         write_start <= 1'b0;
+         sdcard_write_ack <= 1'b0;
+         wstate <= w_prepare;
+         write_error <= 1'b0;
+         sdreq <= 1'b0;
       end
-		
-		// рабочие состояния
+      
+      // рабочие состояния
       else   begin
-				
-			//*********************************************
-			//* Обработка unibus-транзакций 
-			//*********************************************
+            
+         //*********************************************
+         //* Обработка unibus-транзакций 
+         //*********************************************
             // чтение регистров
             if (bus_read_req == 1'b1)   begin
                case (wb_adr_i[4:1])
                   4'b0000 :   wb_dat_o <= 16'o401;        // 174000 - DWID
                   4'b0001 :   wb_dat_o <= {5'b00000, cmderr,10'o0};    // 174002 - DWERR
-                  4'b0011 :   begin  							 // 174006 - DWSEC
-											wb_dat_o <= {11'o0, sec};   
-											rqa <= 1'b0;
-										end	
+                  4'b0011 :   begin                        // 174006 - DWSEC
+                                 wb_dat_o <= {11'o0, sec};   
+                                 rqa <= 1'b0;
+                              end   
                   4'b0100 :   begin                       // 174010 - DWBUF
-											wb_dat_o <= sdcard_xfer_out;      
-											if (wb_ack_o) begin
-													if (&sdcard_xfer_addr == 1'b1) begin
-														rqa <= 1'b1;
-														drq <= 1'b0;
-													end	
-													else sdcard_xfer_addr <= sdcard_xfer_addr + 1'b1;
-											end  
-							         end 
+                                 wb_dat_o <= sdcard_xfer_out;      
+                                 if (wb_ack_o) begin
+                                       if (&sdcard_xfer_addr == 1'b1) begin
+                                          rqa <= 1'b1;
+                                          drq <= 1'b0;
+                                       end   
+                                       else sdcard_xfer_addr <= sdcard_xfer_addr + 1'b1;
+                                 end  
+                              end 
                   4'b0101 :   wb_dat_o <= {6'o0,cyl} ;  // 174012 - DWCYL
                   4'b0110 :   wb_dat_o <= {13'o0,hd} ;  // 174014 - DWHD
-                  4'b0111 :   begin							  // 174016 - DWCS2
-											wb_dat_o <= {1'b0, sdcard_idle,write_error, sdcard_idle, drq, 1'b0, 1'b0, cmderr, 8'b0};  
-											rqa <= 1'b0;
-										end
+                  4'b0111 :   begin                       // 174016 - DWCS2
+                                 wb_dat_o <= {1'b0, sdcard_idle,write_error, sdcard_idle, drq, 1'b0, 1'b0, cmderr, 8'b0};  
+                                 rqa <= 1'b0;
+                              end
                   4'b1000 :   begin
-											wb_dat_o <= {busy, 7'b0000000, 1'b1/*готовность буфера к обмену*/, ide, 5'b00000, rqa}; // 174020 -  DWSTRS
-										end	
+                                 wb_dat_o <= {busy, 7'b0000000, 1'b1/*готовность буфера к обмену*/, ide, 5'b00000, rqa}; // 174020 -  DWSTRS
+                              end   
                   4'b1001 :   begin
-											wb_dat_o <= sdcard_xfer_addr; // 174022 - текущий адрес в буфере SDSPI, для отладки, этого регистра в настоящем контроллере нет
-										end	
+                                 wb_dat_o <= sdcard_xfer_addr; // 174022 - текущий адрес в буфере SDSPI, для отладки, этого регистра в настоящем контроллере нет
+                              end   
                   default :   wb_dat_o <= {16{1'b0}} ; 
                endcase 
             end
-			
-            // запись регистров	
+         
+            // запись регистров   
             else if (bus_write_req == 1'b1)  begin
                 if (wb_sel_i == 2'b11)  begin
                     case (wb_adr_i[4:1])
                     // 174006 - DWSEC
                      4'b0011 :  begin
                                     sec <= wb_dat_i[4:0] - 1'b1;    // номера секторов начинаются с 1
-												rqa <= 1'b0;
+                                    rqa <= 1'b0;
                                 end
                     // 174010 - DWBUF
                      4'b0100 :  begin   
                                  sdcard_xfer_in<= wb_dat_i; 
-											if (reply)  sdcard_xfer_addr <= sdcard_xfer_addr + 1'b1;										
+                                 if (reply)  sdcard_xfer_addr <= sdcard_xfer_addr + 1'b1;                              
                                 end
                     // 174012 - DWCYL
                      4'b0101 :  begin
-												cyl <= wb_dat_i[9:0] ;
-										  end
+                                    cyl <= wb_dat_i[9:0] ;
+                                end
                     // 174014 - DWHD
                      4'b0110 :  begin  
                                     hd <= wb_dat_i[2:0] ; 
@@ -322,124 +322,124 @@ always @(posedge wb_clk_i)
                     // 174016 - DWCS2
                      4'b0111 :  begin  
                                     cmd <= wb_dat_i[7:0] ; 
-												cmderr <= 1'b0;
-												start <= 1'b1;
-												rqa <= 1'b0;
+                                    cmderr <= 1'b0;
+                                    start <= 1'b1;
+                                    rqa <= 1'b0;
                                 end
                     // 174020 - DWSTRS
                      4'b1000 :  begin  
                                     ide <= wb_dat_i[6] ; 
-												rstreq <= wb_dat_i[3];
+                                    rstreq <= wb_dat_i[3];
                                 end
                   endcase 
                end 
             end
-				
-				//*********************************************
-			   // запуск команды
-				//*********************************************
-  			   if (start == 1'b1)  begin
+            
+            //*********************************************
+            // запуск команды
+            //*********************************************
+              if (start == 1'b1)  begin
                case (cmd)  // выбор действия по коду функции 
-					
-						// Возврат на цилиндр 0 - у нас просто NOP
-						8'o20: 	begin
-										start <= 1'b0;
-										rqa <= 1'b1;
-									end	
-								
-					 
-						// чтение
+               
+                  // Возврат на цилиндр 0 - у нас просто NOP
+                  8'o20:    begin
+                              start <= 1'b0;
+                              rqa <= 1'b1;
+                           end   
+                        
+                
+                  // чтение
                   8'o40: begin
-									// запрос доступа к SD-карте
-									sdreq <= 1'b1;
-									if (sdack) // подтверждение получено
+                           // запрос доступа к SD-карте
+                           sdreq <= 1'b1;
+                           if (sdack) // подтверждение получено
                               // если SD-модуль свободен, чтение еще не запущено и не завершено
                               if (sdcard_idle == 1'b1 & read_start == 1'b0 & sdcard_read_done == 1'b0) begin
-													read_start <= 1'b1 ; 
-													busy <= 1'b1;
+                                       read_start <= 1'b1 ; 
+                                       busy <= 1'b1;
                               end
-										else if (sdcard_read_done == 1'b1) sdcard_read_ack <= 1'b1;
+                              else if (sdcard_read_done == 1'b1) sdcard_read_ack <= 1'b1;
                               else if (sdcard_read_ack == 1'b1 &             // чтение окончено
-														sdcard_read_done == 1'b0 &         // но еще не подтверждено
-														read_start == 1'b1) begin   // и идет операция чтения
-														
-												  sdcard_read_ack <= 1'b0;	
+                                          sdcard_read_done == 1'b0 &         // но еще не подтверждено
+                                          read_start == 1'b1) begin   // и идет операция чтения
+                                          
+                                      sdcard_read_ack <= 1'b0;   
                                       read_start <= 1'b0 ;        // снимаем запрос чтения
-												  busy <= 1'b0;
-												  start <= 1'b0;
+                                      busy <= 1'b0;
+                                      start <= 1'b0;
                                       if (sdcard_error == 1'b0)   begin        
-												  // чтение окончилось без ошибок
-													  sdcard_xfer_addr <= 8'b00000000;   // инициализируем адрес секторного буфера
-													  drq <= 1'b1;
-												  end	  
-												  // ошибка чтения
+                                      // чтение окончилось без ошибок
+                                         sdcard_xfer_addr <= 8'b00000000;   // инициализируем адрес секторного буфера
+                                         drq <= 1'b1;
+                                      end     
+                                      // ошибка чтения
                                       else  cmderr <= 1'b1;
                                  end 
                            end
-									
-						 // запись			
+                           
+                   // запись         
                   8'o60 :    begin   
-										 case (wstate) 
-										   // подготовка к приему секторного буфера
-										   w_prepare: begin
-														drq <= 1'b1;
-														sdcard_xfer_addr <= 8'b11111111;   // инициализируем адрес секторного буфера
-														wstate <= w_skip;
-													end	
-													
-											w_skip:	
-													if (|sdcard_xfer_addr == 1'b0) wstate <=w_waitdata;
-										   // ожидание заполнения секторного буфера 
-											w_waitdata:
-													if (&sdcard_xfer_addr == 1'b1) begin
-														drq <= 1'b0;
-														wstate <= w_start;
-													end
-														
-											// запуск записи
-											w_start: begin
-													sdreq <= 1'b1;   // запрос доступа к карте
-											      if (sdack & (sdcard_idle == 1)) begin
-														write_start <= 1'b1 ; 
-														busy <= 1'b1;
-														wstate <= w_wait;
-													end	
-												end	
-												
-											// ожидание окончание заиси сектора на карту	
-											w_wait:
-													if (sdcard_write_done == 1'b1) begin
-														wstate <= w_ack;
-														sdcard_write_ack <= 1'b1;
-													end	
-													
-											// подтверждение окончания записи
-											w_ack:
-													if (sdcard_write_done == 1'b0) begin
-														sdcard_write_ack <= 1'b0;
-														wstate <= w_done;
-													end
-													  
-													
-											// запись подтверждена - освобождаем sdspi
-											w_done: begin
+                               case (wstate) 
+                                 // подготовка к приему секторного буфера
+                                 w_prepare: begin
+                                          drq <= 1'b1;
+                                          sdcard_xfer_addr <= 8'b11111111;   // инициализируем адрес секторного буфера
+                                          wstate <= w_skip;
+                                       end   
+                                       
+                                 w_skip:   
+                                       if (|sdcard_xfer_addr == 1'b0) wstate <=w_waitdata;
+                                 // ожидание заполнения секторного буфера 
+                                 w_waitdata:
+                                       if (&sdcard_xfer_addr == 1'b1) begin
+                                          drq <= 1'b0;
+                                          wstate <= w_start;
+                                       end
+                                          
+                                 // запуск записи
+                                 w_start: begin
+                                       sdreq <= 1'b1;   // запрос доступа к карте
+                                       if (sdack & (sdcard_idle == 1)) begin
+                                          write_start <= 1'b1 ; 
+                                          busy <= 1'b1;
+                                          wstate <= w_wait;
+                                       end   
+                                    end   
+                                    
+                                 // ожидание окончание заиси сектора на карту   
+                                 w_wait:
+                                       if (sdcard_write_done == 1'b1) begin
+                                          wstate <= w_ack;
+                                          sdcard_write_ack <= 1'b1;
+                                       end   
+                                       
+                                 // подтверждение окончания записи
+                                 w_ack:
+                                       if (sdcard_write_done == 1'b0) begin
+                                          sdcard_write_ack <= 1'b0;
+                                          wstate <= w_done;
+                                       end
+                                         
+                                       
+                                 // запись подтверждена - освобождаем sdspi
+                                 w_done: begin
                                     write_start <= 1'b0 ;              // снимаем строб записи
-												rqa <= 1'b1;                       // флаг завершения команды
-												start <= 1'b0;                     // заканчиваем обработку команды
-												busy <= 1'b0;
-												wstate <= w_prepare;
-												if (sdcard_error) write_error <= 1'b1;
-											end	
-										endcase	
+                                    rqa <= 1'b1;                       // флаг завершения команды
+                                    start <= 1'b0;                     // заканчиваем обработку команды
+                                    busy <= 1'b0;
+                                    wstate <= w_prepare;
+                                    if (sdcard_error) write_error <= 1'b1;
+                                 end   
+                              endcase   
                            end
-													
-						default:	begin
-										start <= 1'b0;
-										cmderr <= 1'b1;
-									end	
+                                       
+                  default:   begin
+                              start <= 1'b0;
+                              cmderr <= 1'b1;
+                           end   
                endcase 
             end
-				else sdreq <= 1'b0;
+            else sdreq <= 1'b0;
    end 
 
 //********************************************

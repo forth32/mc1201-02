@@ -12,16 +12,16 @@ module irpr
    input                wb_we_i,    
    input                wb_stb_i,   
    output reg           wb_ack_o,   
-	
+   
    output reg           irq,    // Запрос прерывания
    input                iack,   // Подтверждение прерывания
-	
-	// интерфейс принтера
-	output reg [7:0]     lp_data,    // данные для передачи к принтеру
-	output reg           lp_stb_n,   // строб записи в принтер
-	output               lp_init_n,  // строб сброса
-	input                lp_busy,    // сигнал занятости принтера
-	input                lp_err_n    // сигнал ошибки
+   
+   // интерфейс принтера
+   output reg [7:0]     lp_data,    // данные для передачи к принтеру
+   output reg           lp_stb_n,   // строб записи в принтер
+   output               lp_init_n,  // строб сброса
+   input                lp_busy,    // сигнал занятости принтера
+   input                lp_err_n    // сигнал ошибки
                                     
 );
 //
@@ -63,7 +63,7 @@ reg busy;
 reg err_n;
 
 reg interrupt_trigger;     // триггер запроса прерывания
-reg ie;						// флаг разрешения прерывания
+reg ie;                  // флаг разрешения прерывания
 
 // htubcnhs abkmnhfwbb d[jlys[ cbuyfkjd
 reg[3:0] busy_filter; 
@@ -93,99 +93,99 @@ always @(posedge wb_clk_i)
 // Фильтрация входных сигналов
 always @(posedge wb_clk_i or posedge wb_rst_i) 
    if (wb_rst_i)    begin
-	  busy <= 1'b0;
-	  err_n <= 1'b1;
-	end
-	else begin	
-		busy_filter <= {busy_filter[2:0], lp_busy} ;  // фильтр сигнала занятости
-		err_filter <= {err_filter[2:0], lp_err_n} ;  // фильтр сигнала ошибки
+     busy <= 1'b0;
+     err_n <= 1'b1;
+   end
+   else begin   
+      busy_filter <= {busy_filter[2:0], lp_busy} ;  // фильтр сигнала занятости
+      err_filter <= {err_filter[2:0], lp_err_n} ;  // фильтр сигнала ошибки
 
-		if (busy_filter == {4{1'b0}})     busy <= 1'b0 ; 
-		else if (busy_filter == {4{1'b1}}) busy <= 1'b1 ;
-		if (err_filter == {4{1'b0}})     err_n <= 1'b0 ; 
-		else if (err_filter == {4{1'b1}}) err_n <= 1'b1 ;
-	end
+      if (busy_filter == {4{1'b0}})     busy <= 1'b0 ; 
+      else if (busy_filter == {4{1'b1}}) busy <= 1'b1 ;
+      if (err_filter == {4{1'b0}})     err_n <= 1'b0 ; 
+      else if (err_filter == {4{1'b1}}) err_n <= 1'b1 ;
+   end
 
-	
-	
+   
+   
 always @(posedge wb_clk_i or posedge wb_rst_i) 
    if (wb_rst_i)    begin
-	// сброс 
+   // сброс 
       ie    <= 1'b0;
-		irq <= 1'b0;
+      irq <= 1'b0;
       reset_delay <= 8'hff;
       drq <= ~busy;  // начальное значение сигнала DRQ определяется готовностью принтера
-		done <= 1'b0;          
-		lp_stb_n <= 1'b1;        // строб данных
+      done <= 1'b0;          
+      lp_stb_n <= 1'b1;        // строб данных
       wb_dat_o <= 16'h0000;
-		interrupt_trigger <= 1'b0;
+      interrupt_trigger <= 1'b0;
    end
 //**************************************************
 // Логика обработки прерываний 
 //**************************************************
    else begin
-	  case (interrupt_state)
- 		         // нет активного прерывания
+     case (interrupt_state)
+                // нет активного прерывания
               i_idle :
                         begin
-						   //  Если поднят флаг A или B - поднимаем триггер прерывания
+                     //  Если поднят флаг A или B - поднимаем триггер прерывания
                            if ((ie == 1'b1) & (interrupt_trigger == 1'b1))  begin
                               interrupt_state <= i_req ; 
                               irq <= 1'b1 ;    // запрос на прерывание
                            end 
-									else	irq <= 1'b0 ;    // снимаем запрос на прерывания
+                           else   irq <= 1'b0 ;    // снимаем запрос на прерывания
 
                         end
-					// Формирование запроса на прерывание			
-               i_req :			  if (ie == 1'b0) 	interrupt_state <= i_idle ; 	
+               // Формирование запроса на прерывание         
+               i_req :           if (ie == 1'b0)    interrupt_state <= i_idle ;    
                                 else if (iack == 1'b1) begin
                                     // если получено подтверждение прерывания от процессора
                                     irq <= 1'b0 ;               // снимаем запрос
-												interrupt_trigger <= 1'b0;
+                                    interrupt_trigger <= 1'b0;
                                     interrupt_state <= i_wait ; // переходим к ожиданию окончания обработки
                                 end 
-					// Ожидание окончания обработки прерывания			
+               // Ожидание окончания обработки прерывания         
                i_wait :
                            if (iack == 1'b0)  interrupt_state <= i_idle ; 
       endcase
 
-	
+   
 //**************************************************
 // логика работы с шиной и принтером
 //**************************************************
 
-  	  // таймер сброса принтера
+       // таймер сброса принтера
      if (|reset_delay) reset_delay <= reset_delay - 1'b1;
 
-	  // Чтение регистров
+     // Чтение регистров
      if (wb_cyc_i & wb_stb_i & ~wb_ack_o & ~wb_adr_i[1]) begin 
-	     // 177514 - CSR
-	     wb_dat_o <= csr;  
-		  done <= 1'b0; // снимаем признак done
-	  end	  
-	  else wb_dat_o <= 16'o000000; // нет чтения или чтение регистра данных
+        // 177514 - CSR
+        wb_dat_o <= csr;  
+        done <= 1'b0; // снимаем признак done
+     end     
+     else wb_dat_o <= 16'o000000; // нет чтения или чтение регистра данных
    
-     // запись регистра CSR	
+     // запись регистра CSR   
      if (csr_wstb)  begin
          ie  <= wb_dat_i[6];  // разрешение прерывания
          reset_delay <= (wb_dat_i[14]? 8'hff:8'h00);  // сброс принтера
-	  end  
+     end  
 
      // Запись регистра данных
      if ((drq == 1) & (dat_wstb == 1) & (busy == 0) & (err_n == 1)) begin // если контроллер и принтер готовы к приему данных
          drq <= 1'b0;        // снимаем DRQ
          lp_data <= wb_dat_i[7:0];  // выставляем данные 
-		   done <= 1'b0;       // снимаем признак done   
-		   lp_stb_n <= 1'b0;          // строб к принтеру
-	  end
-	  
-	  if ((drq == 1'b0) & (lp_stb_n == 1'b0) & (busy == 1'b1))  lp_stb_n <= 1'b1;  // принтер ушел в busy - снимаем строб
-	  if ((drq == 1'b0) & (lp_stb_n == 1'b1) & (busy == 1'b0))  begin
-	    // принтер снял busy
-	    drq  <= 1'b1;   // поднимаем DRQ
-		 done <= 1'b1;   // поднимаем флаг done
-		 interrupt_trigger <= 1'b1;	// вызываем прерывание
-	   end	 
+         done <= 1'b0;       // снимаем признак done   
+         lp_stb_n <= 1'b0;          // строб к принтеру
+     end
+     
+     if ((drq == 1'b0) & (lp_stb_n == 1'b0) & (busy == 1'b1))  lp_stb_n <= 1'b1;  // принтер ушел в busy - снимаем строб
+     if ((drq == 1'b0) & (lp_stb_n == 1'b1) & (busy == 1'b0))  begin
+       // принтер снял busy
+       drq  <= 1'b1;   // поднимаем DRQ
+       done <= 1'b1;   // поднимаем флаг done
+       interrupt_trigger <= 1'b1;   // вызываем прерывание
+      end    
    end 
 
 endmodule
