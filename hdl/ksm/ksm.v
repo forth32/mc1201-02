@@ -22,28 +22,28 @@ module ksm (
 	
 	// последовательный порт
    output tx, 
-   input rx, 
+   input  rx, 
 	
 	// клавиатура PS/2
-   input ps2_clk, 
-   input ps2_data, 
+   input  ps2_clk, 
+   input  ps2_data, 
 	
 	// пищалка
 	output buzzer,
 	
 // синхронизация с КГД
-	output [10:0] col,  // колонка X, 0-1055
-	output [9:0]  row,  // строка Y, 0-627
+	output [10:0] col,        // колонка X, 0-1055
+	output [9:0]  row,        // строка Y, 0-627
 	
-	output [2:0] vspeed,   // индекс скорости порта
-	input [2:0] initspeed, // индекс начальной скорости
-   input clk50,    // 50 MHz
-   input reset     // сброс
+	output [2:0] vspeed,      // индекс скорости порта
+	input  [2:0] initspeed,   // индекс начальной скорости
+   input  clk50,             // 50 MHz
+   input  reset              // сброс
 ); 
  
-wire			sys_init;			         // шина сброса - от процессора к периферии
-
 //----------------------------------------------------------------
+wire			sys_init;	// шина сброса - от процессора к периферии
+
 // шина wishbone
 wire			wb_clk = clk50; 				// синхронизация wishbone - от положительного синхросигнала
 wire [15:0]	wb_adr;							//	шина адреса

@@ -8,29 +8,29 @@
 module sdspi_slave (
 
    // порты SDкарты
-   output sdcard_cs, 
-   output reg sdcard_mosi, 
-   output sdcard_sclk, 
-   input sdcard_miso,
+   output          sdcard_cs, 
+   output reg      sdcard_mosi, 
+   output          sdcard_sclk, 
+   input           sdcard_miso,
    
-   output reg[3:0] sdcard_debug,   // отладочные сигналы
+   output reg[3:0] sdcard_debug,       // отладочные сигналы
 
-   input[22:0] sdcard_addr,        // адрес сектора карты
-   output reg sdcard_idle,         // признак готовности контроллера
-   input sdcard_read_start,        // строб начала чтения
-   input sdcard_read_ack,          // флаг подтверждения окончания чтения
-   output reg sdcard_read_done,    // флаг окончагия чтения
-   input sdcard_write_start,       // строб начала записи
-   input sdcard_write_ack,         // флаг подтверждения команды записи
-   output reg sdcard_write_done,   // флаг окончания записи
-   output reg sdcard_error,        // флаг ошибки
-   input[7:0] sdcard_xfer_addr,    // адрес в буфере чтния/записи
-   output reg[15:0] sdcard_xfer_out,  // слово, читаемое из буфера чтения
-   input sdcard_xfer_write,        // строб записи буфера
-   input[15:0] sdcard_xfer_in,     // слово, записываемое в буфер записи
-   input controller_clk,           // тактирование буферных операций - тактовый сигнал процессорной шины
-   input sdclk,                    // тактовый сигнал SD-карты
-   input reset 
+   input[22:0]     sdcard_addr,        // адрес сектора карты
+   output reg      sdcard_idle,        // признак готовности контроллера
+   input           sdcard_read_start,  // строб начала чтения
+   input           sdcard_read_ack,    // флаг подтверждения окончания чтения
+   output reg      sdcard_read_done,   // флаг окончагия чтения
+   input           sdcard_write_start, // строб начала записи
+   input           sdcard_write_ack,   // флаг подтверждения команды записи
+   output reg      sdcard_write_done,  // флаг окончания записи
+   output reg      sdcard_error,       // флаг ошибки
+   input[7:0]      sdcard_xfer_addr,   // адрес в буфере чтния/записи
+   output reg[15:0]sdcard_xfer_out,    // слово, читаемое из буфера чтения
+   input           sdcard_xfer_write,  // строб записи буфера
+   input[15:0]     sdcard_xfer_in,     // слово, записываемое в буфер записи
+   input           controller_clk,     // тактирование буферных операций - тактовый сигнал процессорной шины
+   input           sdclk,              // тактовый сигнал SD-карты
+   input           reset               // сброс контроллера
 );
 
 //  процесс записи:                                  процесс чтения

@@ -4,37 +4,37 @@
 module dw (
 
 // шина wishbone
-   input                  wb_clk_i,   // тактовая частота шины
-   input                  wb_rst_i,   // сброс
-   input    [4:0]           wb_adr_i,   // адрес 
-   input    [15:0]          wb_dat_i,   // входные данные
-   output reg [15:0]        wb_dat_o,   // выходные данные
+   input                wb_clk_i,   // тактовая частота шины
+   input                wb_rst_i,   // сброс
+   input    [4:0]       wb_adr_i,   // адрес 
+   input    [15:0]      wb_dat_i,   // входные данные
+   output reg [15:0]    wb_dat_o,   // выходные данные
    input                wb_cyc_i,   // начало цикла шины
-   input                wb_we_i,      // разрешение записи (0 - чтение)
+   input                wb_we_i,    // разрешение записи (0 - чтение)
    input                wb_stb_i,   // строб цикла шины
-   input    [1:0]           wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
-   output reg              wb_ack_o,   // подтверждение выбора устройства
+   input    [1:0]       wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
+   output reg           wb_ack_o,   // подтверждение выбора устройства
 
 // обработка прерывания   
-   output reg              irq,         // запрос
-   input                 iack,       // подтверждение
+   output reg           irq,        // запрос
+   input                iack,       // подтверждение
    
 // интерфейс SD-карты
-   output sdcard_cs, 
-   output sdcard_mosi, 
-   output sdcard_sclk, 
-   input sdcard_miso, 
-   output reg sdreq,         // запрос доступа к карте
-   input   sdack,            // подтверждение доступа к карте
+   output               sdcard_cs, 
+   output               sdcard_mosi, 
+   output               sdcard_sclk, 
+   input                sdcard_miso, 
+   output reg           sdreq,      // запрос доступа к карте
+   input                sdack,      // подтверждение доступа к карте
    
 // тактирование SD-карты
-   input sdclock,   
+   input                sdclock,   
 
 // Адрес начала банка на карте
-   input [22:0] start_offset,
+   input [22:0]         start_offset,
    
 // отладочные сигналы
-   output [3:0] sdcard_debug
+   output [3:0]         sdcard_debug
    ); 
 //-----------------------------------------------
 //  Регистры контроллера
@@ -120,16 +120,16 @@ reg cmderr;  // флаг ошибки выполнения команды
 reg rstreq;  // триггер запроса на программный сброс контроллера
       
 // интерфейс к SDSPI
-wire [22:0] sdcard_addr;        // адрес сектора карты
+wire [22:0] sdcard_addr;  // адрес сектора карты
 wire sdcard_read_done;    // флаг окончагия чтения
 wire sdcard_write_done;   // флаг окончания записи
 wire sdcard_error;        // флаг ошибки
 wire [15:0] sdcard_xfer_out;  // слово; читаемое из буфера чтения
 wire sdcard_idle;         // признак готовности контроллера
-reg read_start;        // строб начала чтения
-reg sdcard_read_ack;          // флаг подтверждения окончания чтения
-reg write_start;       // строб начала записи
-reg sdcard_write_ack;         // флаг подтверждения команды записи
+reg read_start;           // строб начала чтения
+reg sdcard_read_ack;      // флаг подтверждения окончания чтения
+reg write_start;          // строб начала записи
+reg sdcard_write_ack;     // флаг подтверждения команды записи
 reg [7:0] sdcard_xfer_addr;    // адрес в буфере чтния/записи
 reg [15:0] sdcard_xfer_in;     // слово; записываемое в буфер записи
 reg write_error;
@@ -154,18 +154,18 @@ sdspi_slave sd1 (
       .sdcard_mosi(sdcard_mosi), 
       .sdcard_sclk(sdcard_sclk), 
       .sdcard_miso(sdcard_miso),
-      .sdcard_debug(sdcard_debug),                  // информационные индикаторы   
+      .sdcard_debug(sdcard_debug),                // информационные индикаторы   
    
-      .sdcard_addr(sdcard_addr),                      // адрес блока на карте
+      .sdcard_addr(sdcard_addr),                  // адрес блока на карте
       .sdcard_idle(sdcard_idle),                  // сигнал готовности модуля к обмену
       
       // сигналы управления чтением 
-      .sdcard_read_start(read_start),       // строб начала чтения
-      .sdcard_read_ack(sdcard_read_ack),           // флаг подтверждения команды чтения
-      .sdcard_read_done(sdcard_read_done),         // флаг окончагия чтения
+      .sdcard_read_start(read_start),             // строб начала чтения
+      .sdcard_read_ack(sdcard_read_ack),          // флаг подтверждения команды чтения
+      .sdcard_read_done(sdcard_read_done),        // флаг окончагия чтения
       
       // сигналы управления записью
-      .sdcard_write_start(write_start),     // строб начала записи
+      .sdcard_write_start(write_start),            // строб начала записи
       .sdcard_write_ack(sdcard_write_ack),         // флаг подтверждения команды записи
       .sdcard_write_done(sdcard_write_done),       // флаг окончания записи
       .sdcard_error(sdcard_error),                 // флаг ошибки
@@ -216,18 +216,16 @@ always @(posedge wb_clk_i)
                               irq <= 1'b1 ;    // запрос на прерывание
                            end 
                            else   irq <= 1'b0 ;    // снимаем запрос на прерывания
-
                         end
                // Формирование запроса на прерывание         
-               i_req :           if (ide == 0) interrupt_state <= i_idle ;    
-                                else if (iack == 1'b1) begin
-                                    // если получено подтверждение прерывания от процессора
-                                    irq <= 1'b0 ;               // снимаем запрос
-                                    interrupt_state <= i_wait ; // переходим к ожиданию окончания обработки
-                                end 
+               i_req :     if (ide == 0) interrupt_state <= i_idle ;    
+                           else if (iack == 1'b1) begin
+                              // если получено подтверждение прерывания от процессора
+                              irq <= 1'b0 ;               // снимаем запрос
+                              interrupt_state <= i_wait ; // переходим к ожиданию окончания обработки
+                           end 
                // Ожидание окончания обработки прерывания         
-               i_wait :
-                           if (iack == 1'b0)  interrupt_state <= i_idle ; 
+               i_wait :    if (iack == 1'b0)  interrupt_state <= i_idle ; 
        endcase
 end
 

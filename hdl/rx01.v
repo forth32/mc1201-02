@@ -7,22 +7,22 @@ module rx01 (
    input    [15:0]        wb_dat_i,   // входные данные
    output reg [15:0]      wb_dat_o,   // выходные данные
    input                  wb_cyc_i,   // начало цикла шины
-   input                  wb_we_i,      // разрешение записи (0 - чтение)
+   input                  wb_we_i,    // разрешение записи (0 - чтение)
    input                  wb_stb_i,   // строб цикла шины
    input    [1:0]         wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
    output reg             wb_ack_o,   // подтверждение выбора устройства
 
 // обработка прерывания   
-   output reg           irq,         // запрос
-   input                iack,       // подтверждение
+   output reg             irq,        // запрос
+   input                  iack,       // подтверждение
    
 // интерфейс SD-карты
-   output sdcard_cs, 
-   output sdcard_mosi, 
-   output sdcard_sclk, 
-   input sdcard_miso, 
-   output reg sdreq,    // запрос доступа к карте
-   input   sdack,         // подтверждение доступа к карте
+   output                 sdcard_cs, 
+   output                 sdcard_mosi, 
+   output                 sdcard_sclk, 
+   input                  sdcard_miso, 
+   output reg             sdreq,      // запрос доступа к карте
+   input                  sdack,      // подтверждение доступа к карте
    
 // тактирование SD-карты
    input sdclock,   
@@ -104,19 +104,19 @@ reg io_phase;
 reg delflag;     // признак удаленного сектора
       
 // интерфейс к SDSPI
-wire [22:0] sdcard_addr;        // адрес сектора карты
-wire sdcard_read_done;    // флаг окончагия чтения
-wire sdcard_write_done;   // флаг окончания записи
-wire sdcard_error;        // флаг ошибки
-wire [15:0] sdcard_xfer_out;  // слово; читаемое из буфера чтения
-wire sdcard_idle;         // признак готовности контроллера
-reg read_start;        // строб начала чтения
-reg sdcard_read_ack;          // флаг подтверждения окончания чтения
-reg write_start;       // строб начала записи
-reg sdcard_write_ack;         // флаг подтверждения команды записи
-reg [7:0] sdcard_xfer_addr;    // адрес в буфере чтния/записи
-reg [15:0] sdcard_xfer_in;     // слово; записываемое в буфер записи
-reg donetrigger;
+wire [22:0] sdcard_addr;    // адрес сектора карты
+wire sdcard_read_done;      // флаг окончагия чтения
+wire sdcard_write_done;     // флаг окончания записи
+wire sdcard_error;          // флаг ошибки
+wire [15:0] sdcard_xfer_out;// слово; читаемое из буфера чтения
+wire sdcard_idle;           // признак готовности контроллера
+reg read_start;             // строб начала чтения
+reg sdcard_read_ack;        // флаг подтверждения окончания чтения
+reg write_start;            // строб начала записи
+reg sdcard_write_ack;       // флаг подтверждения команды записи
+reg [7:0] sdcard_xfer_addr; // адрес в буфере чтния/записи
+reg [15:0] sdcard_xfer_in;  // слово; записываемое в буфер записи
+reg donetrigger;             
 
 // состояния процесса обмена с sdspi
 reg [1:0] iostate;
@@ -135,18 +135,18 @@ sdspi_slave sd1 (
       .sdcard_mosi(sdcard_mosi), 
       .sdcard_sclk(sdcard_sclk), 
       .sdcard_miso(sdcard_miso),
-      .sdcard_debug(sdcard_debug),                  // информационные индикаторы   
+      .sdcard_debug(sdcard_debug),                 // информационные индикаторы   
    
-      .sdcard_addr(sdcard_addr),                      // адрес блока на карте
-      .sdcard_idle(sdcard_idle),                  // сигнал готовности модуля к обмену
+      .sdcard_addr(sdcard_addr),                   // адрес блока на карте
+      .sdcard_idle(sdcard_idle),                   // сигнал готовности модуля к обмену
       
-      // сигналы управления чтением 
-      .sdcard_read_start(read_start),       // строб начала чтения
+      // сигналы управления чтением  
+      .sdcard_read_start(read_start),              // строб начала чтения
       .sdcard_read_ack(sdcard_read_ack),           // флаг подтверждения команды чтения
       .sdcard_read_done(sdcard_read_done),         // флаг окончагия чтения
       
       // сигналы управления записью
-      .sdcard_write_start(write_start),     // строб начала записи
+      .sdcard_write_start(write_start),            // строб начала записи
       .sdcard_write_ack(sdcard_write_ack),         // флаг подтверждения команды записи
       .sdcard_write_done(sdcard_write_done),       // флаг окончания записи
       .sdcard_error(sdcard_error),                 // флаг ошибки
@@ -158,7 +158,7 @@ sdspi_slave sd1 (
       .sdcard_xfer_write(drq),                     // разрешение записи буфера
       .controller_clk(wb_clk_i),                   // синхросигнал общей шины
       .reset(reset),                               // сброс
-      .sdclk(sdclock)                               // синхросигнал SD-карты
+      .sdclk(sdclock)                              // синхросигнал SD-карты
 ); 
    
 // формирователь ответа на цикл шины   
@@ -188,16 +188,15 @@ always @(posedge wb_clk_i)   begin
                               irq <= 1'b1 ;    // запрос на прерывание
                            end 
                            else   irq <= 1'b0 ;    // снимаем запрос на прерывания
-
                         end
                // Формирование запроса на прерывание         
-               i_req :          if (ide == 1'b0)    interrupt_state <= i_idle ;    
-                                else if (iack == 1'b1) begin
-                                    // если получено подтверждение прерывания от процессора
-                                    irq <= 1'b0 ;               // снимаем запрос
-                                    interrupt_trigger <= 1'b0;
-                                    interrupt_state <= i_wait ; // переходим к ожиданию окончания обработки
-                                end 
+               i_req :     if (ide == 1'b0)    interrupt_state <= i_idle ;    
+                           else if (iack == 1'b1) begin
+                                 // если получено подтверждение прерывания от процессора
+                                 irq <= 1'b0 ;               // снимаем запрос
+                                 interrupt_trigger <= 1'b0;
+                                 interrupt_state <= i_wait ; // переходим к ожиданию окончания обработки
+                           end 
                // Ожидание окончания обработки прерывания         
                i_wait :
                            if (iack == 1'b0)  interrupt_state <= i_idle ; 
@@ -292,14 +291,14 @@ always @(posedge wb_clk_i)   begin
                                 // принят бит GO при незапущенной операции
                                 if ((start == 1'b0) && (wb_dat_i[0] == 1'b1)) begin 
                                     // Ввод новой команды
-                                    start <= 1'b1;               // признак активной команды
+                                    start <= 1'b1;              // признак активной команды
                                     done <= 1'b0;               // сбрасываем признак завершения команды
                                     drq <= 1'b0;
-                                    cmd <= wb_dat_i[3:1];      // код команды
-                                    cmderr <= 1'b0;            // сбрасываем ошибки
-                                    iostate <= io_start;         // начальная фаза взаимодействия с SDSPI
+                                    cmd <= wb_dat_i[3:1];       // код команды
+                                    cmderr <= 1'b0;             // сбрасываем ошибки
+                                    iostate <= io_start;        // начальная фаза взаимодействия с SDSPI
                                     drv <= wb_dat_i[4];         // номер устройства
-                                    interrupt_trigger <= 1'b0;   // снимаем ранее запрошенное прерывание
+                                    interrupt_trigger <= 1'b0;  // снимаем ранее запрошенное прерывание
                                     // установка флагов файзы ввода команды согласно протокола (сектор - цилиндр - начало выполнения)
                                     io_phase <= 1'b0;            
                                     trk_phase <= 1'b0;
@@ -365,7 +364,6 @@ always @(posedge wb_clk_i)   begin
                            if (drq == 0) begin
                                 drq <= 1'b1;
                                 sdcard_xfer_addr <= 8'o0;
-//                                done <= 1'b0;
                            end
                         end
                         

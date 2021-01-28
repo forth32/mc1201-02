@@ -6,39 +6,39 @@ module fdd_my (
 // шина wishbone
    input                  wb_clk_i,   // тактовая частота шины
    input                  wb_rst_i,   // сброс
-   input    [1:0]         wb_adr_i,   // адрес 
-   input    [15:0]        wb_dat_i,   // входные данные
-    output reg [15:0]   wb_dat_o,   // выходные данные
-   input                   wb_cyc_i,   // начало цикла шины
-   input                   wb_we_i,      // разрешение записи (0 - чтение)
-   input                   wb_stb_i,   // строб цикла шины
+   input      [1:0]       wb_adr_i,   // адрес 
+   input      [15:0]      wb_dat_i,   // входные данные
+   output reg [15:0]      wb_dat_o,   // выходные данные
+   input                  wb_cyc_i,   // начало цикла шины
+   input                  wb_we_i,    // разрешение записи (0 - чтение)
+   input                  wb_stb_i,   // строб цикла шины
    input    [1:0]         wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
-   output reg            wb_ack_o,   // подтверждение выбора устройства
+   output reg             wb_ack_o,   // подтверждение выбора устройства
 
 // обработка прерывания   
    output reg             irq,         // запрос
-   input                    iack,       // подтверждение
+   input                  iack,        // подтверждение
    
 // DMA
-   output reg             dma_req,    // запрос DMA
+   output reg           dma_req,    // запрос DMA
    input                dma_gnt,    // подтверждение DMA
    output reg[15:0]     dma_adr_o,  // выходной адрес при DMA-обмене
    input[15:0]          dma_dat_i,  // входная шина данных DMA
-   output reg[15:0]       dma_dat_o,  // выходная шина данных DMA
-   output reg             dma_stb_o,  // строб цикла шины DMA
-   output reg             dma_we_o,   // направление передачи DMA (0 - память->диск, 1 - диск->память) 
+   output reg[15:0]     dma_dat_o,  // выходная шина данных DMA
+   output reg           dma_stb_o,  // строб цикла шины DMA
+   output reg           dma_we_o,   // направление передачи DMA (0 - память->диск, 1 - диск->память) 
    input                dma_ack_i,  // Ответ от устройства, с которым идет DMA-обмен
    
 // интерфейс SD-карты
-   output sdcard_cs, 
-   output sdcard_mosi, 
-   output sdcard_sclk, 
-   input sdcard_miso, 
-   output reg sdreq,    // запрос доступа к карте
-   input   sdack,         // подтверждение доступа к карте
+   output     sdcard_cs, 
+   output     sdcard_mosi, 
+   output     sdcard_sclk, 
+   input      sdcard_miso, 
+   output reg sdreq,      // запрос доступа к карте
+   input      sdack,      // подтверждение доступа к карте
    
 // тактирование SD-карты
-   input sdclock,   
+   input      sdclock,   
    
 // Адрес начала банка на карте
    input [22:0] start_offset,
@@ -119,47 +119,47 @@ reg drq;      // запрос на чтение-запись регистра д
 
 // блок параметров
 reg [14:0] parm_addr; // адрес блока параметров в ОЗУ системы
-reg [6:0] cyl;   // цилиндр 0 - 79
-reg hd;          // головка 
-reg [3:0] sec;   // сектор 0 - 10
-reg [1:0] drv;         // номер привода
-reg [15:0] wordcount;  // число читаемых слов
-reg [15:0] ioadr;      // адрес для чтения-записи данных
-reg alltrk_mode; // признак режима чтения полной дорожки
-reg start;       // признак запуска команды на выполнение (go)
-reg [3:0] cmd;      // код команды
-reg rstreq;      // запрос на программный сброс
+reg [6:0] cyl;        // цилиндр 0 - 79
+reg hd;               // головка 
+reg [3:0] sec;        // сектор 0 - 10
+reg [1:0] drv;        // номер привода
+reg [15:0] wordcount; // число читаемых слов
+reg [15:0] ioadr;     // адрес для чтения-записи данных
+reg alltrk_mode;      // признак режима чтения полной дорожки
+reg start;            // признак запуска команды на выполнение (go)
+reg [3:0] cmd;        // код команды
+reg rstreq;           // запрос на программный сброс
 
 // Флаги ошибок
 reg nxp;         // таймаут шины при DMA-обмене
 reg err_sec;     // неправильный номер сектора
-reg err_cyl0;     // неправильный номер цилиндра, обнаруженный в обработчике команд
+reg err_cyl0;    // неправильный номер цилиндра, обнаруженный в обработчике команд
 reg err_cyl1;    // неправильный номер цилиндра, обнаруженный в DMA-контроллере
 wire err_cyl = err_cyl0 | err_cyl1; // объединенный флаг ошибки
 
 // интерфейс к SDSPI
-wire [22:0] sdcard_addr;        // адрес сектора карты
+wire [22:0] sdcard_addr;  // адрес сектора карты
 wire sdcard_read_done;    // флаг окончагия чтения
 wire sdcard_write_done;   // флаг окончания записи
 wire sdcard_error;        // флаг ошибки
 wire [15:0] sdbuf_dataout;  // слово; читаемое из буфера чтения
 wire sdcard_idle;         // признак готовности контроллера
-reg sdcard_read_ack;          // флаг подтверждения окончания чтения
-reg sdcard_write_ack;         // флаг подтверждения команды записи
-reg [7:0] sdbuf_addr;    // адрес в буфере чтния/записи
-reg [15:0] sdbuf_datain;     // слово; записываемое в буфер записи
-reg sdbuf_we;            // разрешение записи в буфер
-reg read_start;        // строб начала чтения
-reg write_start;       // строб начала записи
+reg sdcard_read_ack;      // флаг подтверждения окончания чтения
+reg sdcard_write_ack;     // флаг подтверждения команды записи
+reg [7:0] sdbuf_addr;     // адрес в буфере чтния/записи
+reg [15:0] sdbuf_datain;  // слово; записываемое в буфер записи
+reg sdbuf_we;             // разрешение записи в буфер
+reg read_start;           // строб начала чтения
+reg write_start;          // строб начала записи
 
 //  Интерфейс к DMA-контроллеру 
-reg io_complete;       // окончание процедуры передачи данных
-reg [15:0] pdata;      // очередное слово, загружаемое из списка параметров
+reg io_complete;          // окончание процедуры передачи данных
+reg [15:0] pdata;         // очередное слово, загружаемое из списка параметров
 //    Запросы на выполнение команд:
-reg start_loadparm;    // начало загрузки параметров
-reg start_rd;          // чтение данных
-reg start_wr;          // запись данных
-reg start_bootparm;    // установка параметров загрузочного сектора
+reg start_loadparm;       // начало загрузки параметров
+reg start_rd;             // чтение данных
+reg start_wr;             // запись данных
+reg start_bootparm;       // установка параметров загрузочного сектора
 
 // Состояния процесса обработки команд контроллера
 reg [3:0] cmdstate;
@@ -207,30 +207,30 @@ sdspi_slave sd1 (
       .sdcard_mosi(sdcard_mosi), 
       .sdcard_sclk(sdcard_sclk), 
       .sdcard_miso(sdcard_miso),
-      .sdcard_debug(sdcard_debug),                  // информационные индикаторы   
+      .sdcard_debug(sdcard_debug),               // информационные индикаторы   
    
-      .sdcard_addr(sdcard_addr),                      // адрес блока на карте
-      .sdcard_idle(sdcard_idle),                  // сигнал готовности модуля к обмену
+      .sdcard_addr(sdcard_addr),                 // адрес блока на карте
+      .sdcard_idle(sdcard_idle),                 // сигнал готовности модуля к обмену
       
       // сигналы управления чтением 
-      .sdcard_read_start(read_start),       // строб начала чтения
-      .sdcard_read_ack(sdcard_read_ack),           // флаг подтверждения команды чтения
-      .sdcard_read_done(sdcard_read_done),         // флаг окончагия чтения
+      .sdcard_read_start(read_start),            // строб начала чтения
+      .sdcard_read_ack(sdcard_read_ack),         // флаг подтверждения команды чтения
+      .sdcard_read_done(sdcard_read_done),       // флаг окончагия чтения
       
       // сигналы управления записью
-      .sdcard_write_start(write_start),     // строб начала записи
-      .sdcard_write_ack(sdcard_write_ack),         // флаг подтверждения команды записи
-      .sdcard_write_done(sdcard_write_done),       // флаг окончания записи
-      .sdcard_error(sdcard_error),                 // флаг ошибки
+      .sdcard_write_start(write_start),          // строб начала записи
+      .sdcard_write_ack(sdcard_write_ack),       // флаг подтверждения команды записи
+      .sdcard_write_done(sdcard_write_done),     // флаг окончания записи
+      .sdcard_error(sdcard_error),               // флаг ошибки
 
       // интерфейс к буферной памяти контроллера
-      .sdcard_xfer_addr(sdbuf_addr),         // текущий адрес в буферах чтения и записи
+      .sdcard_xfer_addr(sdbuf_addr),             // текущий адрес в буферах чтения и записи
       .sdcard_xfer_out(sdbuf_dataout),           // слово, читаемое из буфера чтения
       .sdcard_xfer_in(sdbuf_datain),             // слово, записываемое в буфер записи
-      .sdcard_xfer_write(sdbuf_we),     // разрешение записи буфера
-      .controller_clk(wb_clk_i),                   // синхросигнал общей шины
-      .reset(reset),                               // сброс
-      .sdclk(sdclock)                               // синхросигнал SD-карты
+      .sdcard_xfer_write(sdbuf_we),              // разрешение записи буфера
+      .controller_clk(wb_clk_i),                 // синхросигнал общей шины
+      .reset(reset),                             // сброс
+      .sdclk(sdclock)                            // синхросигнал SD-карты
 ); 
    
 // формирователь ответа на цикл шины   
@@ -257,19 +257,17 @@ always @(posedge wb_clk_i)   begin
                               irq <= 1'b1 ;    // запрос на прерывание
                            end 
                            else   irq <= 1'b0 ;    // снимаем запрос на прерывания
-
                         end
                // Формирование запроса на прерывание         
-               i_req :           if (ie == 1'b0)    interrupt_state <= i_idle ;    
-                                else if (iack == 1'b1) begin
-                                    // если получено подтверждение прерывания от процессора
-                                    irq <= 1'b0 ;               // снимаем запрос
-                                    interrupt_trigger <= 1'b0;
-                                    interrupt_state <= i_wait ; // переходим к ожиданию окончания обработки
-                                end 
+               i_req :    if (ie == 1'b0)    interrupt_state <= i_idle ;    
+                          else if (iack == 1'b1) begin
+                              // если получено подтверждение прерывания от процессора
+                              irq <= 1'b0 ;               // снимаем запрос
+                              interrupt_trigger <= 1'b0;
+                              interrupt_state <= i_wait ; // переходим к ожиданию окончания обработки
+                          end 
                // Ожидание окончания обработки прерывания         
-               i_wait :
-                           if (iack == 1'b0)  interrupt_state <= i_idle ; 
+               i_wait :   if (iack == 1'b0)  interrupt_state <= i_idle ; 
     endcase
 
 //**************************************************
@@ -286,12 +284,12 @@ always @(posedge wb_clk_i)   begin
         rstreq <= 1'b0;
         cmd <= 4'b0000;
         alltrk_mode <= 1'b0;
-         start_loadparm <= 1'b0;
-         start_rd <= 1'b0;
-         start_wr <= 1'b0;
-         start_bootparm <= 1'b0;
-         err_cyl0 <= 1'b0;
-         err_sec <= 1'b0;
+        start_loadparm <= 1'b0;
+        start_rd <= 1'b0;
+        start_wr <= 1'b0;
+        start_bootparm <= 1'b0;
+        err_cyl0 <= 1'b0;
+        err_sec <= 1'b0;
         interrupt_trigger <= 1'b0;
         cmdstate <= CMD_START;
     end
@@ -313,7 +311,7 @@ always @(posedge wb_clk_i)   begin
                                 if (!drq) wb_dat_o <= errstatus;  // если нет активной команды - читается реистр ошибок
                                 else wb_dat_o <= 16'o0;            // иначе пока нули (что там должно быть на самом деле я не понял)
                endcase 
-         end
+            end
          
             // запись регистров   
             else if (bus_write_req == 1'b1)  begin

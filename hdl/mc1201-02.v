@@ -87,17 +87,17 @@ wire        wb_stb;
 wire        wb_ack;                    
 
 // Основная шина процессора
-wire        cpu_access_req;            // разрешение доступа к шине
-wire [16:0]   cpu_adr;                 // шина адреса
-wire [15:0] cpu_data_out;              // выход шины данных
-wire         cpu_cyc;                  // строб транзакции
-wire         cpu_we;                   // направление передачи (1 - от процессора)
-wire [1:0]   cpu_bsel;                 // выбор байтов из слова
-wire         cpu_stb;                  // строб обмена по шине
-wire          cpu_ack;                 // подтверждение транзакции
+wire        cpu_access_req;          // разрешение доступа к шине
+wire [16:0] cpu_adr;                 // шина адреса
+wire [15:0] cpu_data_out;            // выход шины данных
+wire        cpu_cyc;                 // строб транзакции
+wire        cpu_we;                  // направление передачи (1 - от процессора)
+wire [1:0]  cpu_bsel;                // выбор байтов из слова
+wire        cpu_stb;                 // строб обмена по шине
+wire        cpu_ack;                 // подтверждение транзакции
 
 // шина векторов прерываний                                       
-wire        vm_una;                     // запрос безадресного чтения
+wire        vm_una;                    // запрос безадресного чтения
 wire        vm_istb;                   // Строб приема вектора прерывания 
 wire        vm_iack;                   // подтверждение прерывания
 wire [15:0] vm_ivec;                   // вектор прерывания
@@ -146,7 +146,7 @@ wire [15:0] my_dat;
 wire [15:0] kgd_dat;
 
 // флаг готовности динамической памяти.
-wire          dr_ready;                           
+wire        dr_ready;                           
                                        
 wire        vm_init_out;               // выход сброса от прецессора к устройствам на шине
 wire        vm_dclo_in;                // вход сброса
@@ -205,6 +205,15 @@ assign buzzer=~nbuzzer;
 // синхросигнал SD-карты
 assign sdcard_sclk=sdclock;
 
+// линии выбор дисковых банков
+wire [1:0] diskbank;
+
+// флаг выбора консольного порта, 0 - терминальный модуль, 1 - ИРПС 2
+wire  console_selector;       
+
+// включение режима замедления процессора
+wire cpuslow;
+
 //************************************
 //*            VGA
 //************************************
@@ -247,6 +256,13 @@ assign led[2] = ~my_sdreq | ~dx_sdreq;   // запрос обмена диска
 assign led[3] = ~timer_on;   // индикация включения таймера
 
 //************************************************
+//* Переключатели конфигурации
+//************************************************
+assign diskbank = sw[1:0];       // выбор дискового банка на SD-карте
+assign console_selector=sw[2];   // подключение консольного порта (0 - терминал, 1 - внешние линии UART)
+assign cpuslow=sw[3];            // включение режима замедления процессора
+
+//************************************************
 //* тактовый генератор 
 //************************************************
 assign wb_clk  = sys_clk_p;
@@ -283,16 +299,16 @@ wbc_rst reset
 //*************************************
 
 // счетчик замедления процессора
-reg [4:0] cpuslow;
-always @ (posedge sys_clk_p) cpuslow <= cpuslow + 1'b1;
-wire cpu_clk_enable=&cpuslow;  // формирователь импульса с заполнением 1/16
+reg [4:0] cpudelay;
+always @ (posedge sys_clk_p) cpudelay <= cpudelay + 1'b1;
+wire cpu_clk_enable=&cpudelay;  // формирователь импульса с заполнением 1/16
 
 vm2_wb #(.VM2_CORE_FIX_PREFETCH(0)) cpu
 (
 // Синхросигналы  
    .vm_clk_p(sys_clk_p),               // Положительный синхросигнал
    .vm_clk_n(sys_clk_n),               // Отрицательный синхросигнал
-   .vm_clk_slow(sw[3]),                // Режим замедления процессора - определяется переключателем 3
+   .vm_clk_slow(cpuslow),              // Режим замедления процессора - определяется переключателем 3
    .vm_clk_ena(cpu_clk_enable),        // счетчик замедления
 
 // Шина Wishbone                                       
@@ -386,29 +402,29 @@ assign DRAM_UDQM=dram_h;
 assign DRAM_LDQM=dram_l; 
 
 sdram_top sdram(
-            .clk(wb_clk),
-            .rst_n(drs), // запускаем модуль, как только pll выйдет в рабочий режим, запуска процессора не ждем
-            .sdram_wr_req(dram_wr),
-            .sdram_rd_req(dram_rd),
-            .sdram_wr_ack(sdr_wr_ack),
-            .sdram_rd_ack(sdr_rd_ack),
-            .sdram_byteenable(wb_sel),
-            .sys_wraddr({8'b0000000,wb_adr[15:1]}),
-            .sys_rdaddr({8'b0000000,wb_adr[15:1]}),
-            .sys_data_in(wb_out),
-            .sys_data_out(dram_dat),
-            .sdwr_byte(1),
-            .sdrd_byte(4),
-            .sdram_cke(DRAM_CKE),
-            .sdram_cs_n(DRAM_CS_N),
-            .sdram_ras_n(DRAM_RAS_N),
-            .sdram_cas_n(DRAM_CAS_N),
-            .sdram_we_n(DRAM_WE_N),
-            .sdram_ba({DRAM_BA_1,DRAM_BA_0}),
-            .sdram_addr(DRAM_ADDR[12:0]),
-            .sdram_data(DRAM_DQ),
-            .sdram_init_done(dr_ready)
-         );
+    .clk(wb_clk),
+    .rst_n(drs), // запускаем модуль, как только pll выйдет в рабочий режим, запуска процессора не ждем
+    .sdram_wr_req(dram_wr),
+    .sdram_rd_req(dram_rd),
+    .sdram_wr_ack(sdr_wr_ack),
+    .sdram_rd_ack(sdr_rd_ack),
+    .sdram_byteenable(wb_sel),
+    .sys_wraddr({8'b0000000,wb_adr[15:1]}),
+    .sys_rdaddr({8'b0000000,wb_adr[15:1]}),
+    .sys_data_in(wb_out),
+    .sys_data_out(dram_dat),
+    .sdwr_byte(1),
+    .sdrd_byte(4),
+    .sdram_cke(DRAM_CKE),
+    .sdram_cs_n(DRAM_CS_N),
+    .sdram_ras_n(DRAM_RAS_N),
+    .sdram_cas_n(DRAM_CAS_N),
+    .sdram_we_n(DRAM_WE_N),
+    .sdram_ba({DRAM_BA_1,DRAM_BA_0}),
+    .sdram_addr(DRAM_ADDR[12:0]),
+    .sdram_data(DRAM_DQ),
+    .sdram_init_done(dr_ready)
+);
          
 // формирователь сигнала подверждения транзакции
 reg [1:0]dack;
@@ -423,19 +439,16 @@ end
 //**********************************
 // Выбор консольного порта
 //**********************************
-wire          console_selector;       // флаг выбора консольного порта, 0 - терминальный модуль, 1 - ИРПС 2
-wire          uart1_txd, uart1_rxd;   // линии ИРПС 1
-wire         uart2_txd, uart2_rxd;    // линии ИРПС 2
-wire          terminal_tx,terminal_rx;// линии аппаратного терминала
+wire  uart1_txd, uart1_rxd;   // линии ИРПС 1
+wire  uart2_txd, uart2_rxd;   // линии ИРПС 2
+wire  terminal_tx,terminal_rx;// линии аппаратного терминала
 
 `ifdef KSM_module
-assign console_selector=sw[2];        // выбор определяется переключателем 2
 assign irps_txd = (console_selector == 0)? uart2_txd : uart1_txd;
 assign terminal_rx = (console_selector == 0)? uart1_txd : uart2_txd;
 assign uart1_rxd = (console_selector == 0)? terminal_tx : irps_rxd;
 assign uart2_rxd = (console_selector == 0)? irps_rxd : terminal_tx;
 `else
-assign console_selector=1'b0;
 assign irps_txd = uart1_txd;
 assign uart1_rxd = irps_rxd;
 `endif
@@ -646,12 +659,12 @@ wire rk11_dma_req;
 wire rk11_dma_gnt;
 
 // выходная шина DMA
-wire [15:0]   rk11_adr;                     
-wire         rk11_dma_stb;
-wire         rk11_dma_we;
+wire [15:0] rk11_adr;                     
+wire        rk11_dma_stb;
+wire        rk11_dma_we;
 wire [15:0] rk11_dma_out;
 
-wire [3:0] rksddebug;
+wire [3:0]  rksddebug;
 
 `ifdef RK_module
 
@@ -693,7 +706,7 @@ rk11 rkdisk (
    .sdack(rk_sdack),
    
 // Адрес массива дисков на карте
-   .start_offset({2'b00,sw[1:0],18'h0}),
+   .start_offset({2'b00,diskbank,18'h0}),
 
 // отладочные сигналы
    .sdcard_debug(rksddebug)
@@ -741,7 +754,7 @@ dw hdd(
    .sdack(dw_sdack),
 
 // Адрес массива дисков на карте
-   .start_offset({2'b00,sw[1:0],18'hc000}),
+   .start_offset({2'b00,diskbank,18'hc000}),
    
 // отладочные сигналы
    .sdcard_debug(dwsddebug)
@@ -790,7 +803,7 @@ rx01 dxdisk (
    .sdclock(sdclock),
    
 // Адрес массива дисков на карте
-   .start_offset({2'b00,sw[1:0],18'h2c000}),
+   .start_offset({2'b00,diskbank,18'h2c000}),
    
 // отладочные сигналы
    .sdcard_debug(rxsddebug)
@@ -811,12 +824,12 @@ wire my_dma_req;
 wire my_dma_gnt;
 
 // выходная шина DMA
-wire [15:0]   my_adr;                     
+wire [15:0]  my_adr;                     
 wire         my_dma_stb;
 wire         my_dma_we;
-wire [15:0] my_dma_out;
+wire [15:0]  my_dma_out;
 
-wire [3:0] mysddebug;
+wire [3:0]   mysddebug;
 
 
 `ifdef MY_module
@@ -859,7 +872,7 @@ fdd_my mydisk (
    .sdack(my_sdack),
    
 // Адрес массива дисков на карте
-   .start_offset({2'b00,sw[1:0],18'h2e000}),
+   .start_offset({2'b00,diskbank,18'h2e000}),
 
 // отладочные сигналы
    .sdcard_debug(mysddebug)
@@ -1040,15 +1053,15 @@ initial timer_on=1;  // после подачи питания таймер вк
 reg [1:0] tbshift;
 reg tbevent;
 
-// подавление дребезга кнопок
+// подавление дребезга кнопки
 always @ (posedge i50Hz) begin
   // вводим кнопку в сдвиговый регистр
   tbshift[0] <= timer_switch;
   tbshift[1] <= tbshift[0];
   // регистр заполнен - кнопка стабильно нажата
   if (&tbshift == 1'b1) begin
-		if (tbevent == 1'b0) timer_on <= ~timer_on;  // переключаем состояние таймера
-		tbevent <= 1'b1;										// запрещаем дальнейшие изменения состояния таймиера
+      if (tbevent == 1'b0) timer_on <= ~timer_on;  // переключаем состояние таймера
+      tbevent <= 1'b1;                              // запрещаем дальнейшие изменения состояния таймиера
   end
   // регистр очищен - кнопка стабильно отпущена
   else if (|tbshift == 1'b0) tbevent <= 1'b0;     // разрешаем изменения состояния таймера

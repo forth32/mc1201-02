@@ -13,8 +13,8 @@ module irpr
    input                wb_stb_i,   
    output reg           wb_ack_o,   
    
-   output reg           irq,    // Запрос прерывания
-   input                iack,   // Подтверждение прерывания
+   output reg           irq,        // Запрос прерывания
+   input                iack,       // Подтверждение прерывания
    
    // интерфейс принтера
    output reg [7:0]     lp_data,    // данные для передачи к принтеру
@@ -63,9 +63,9 @@ reg busy;
 reg err_n;
 
 reg interrupt_trigger;     // триггер запроса прерывания
-reg ie;                  // флаг разрешения прерывания
+reg ie;                    // флаг разрешения прерывания
 
-// htubcnhs abkmnhfwbb d[jlys[ cbuyfkjd
+// регистры фильтрации входных сигналов
 reg[3:0] busy_filter; 
 reg[3:0] err_filter; 
 
@@ -98,7 +98,7 @@ always @(posedge wb_clk_i or posedge wb_rst_i)
    end
    else begin   
       busy_filter <= {busy_filter[2:0], lp_busy} ;  // фильтр сигнала занятости
-      err_filter <= {err_filter[2:0], lp_err_n} ;  // фильтр сигнала ошибки
+      err_filter <= {err_filter[2:0], lp_err_n} ;   // фильтр сигнала ошибки
 
       if (busy_filter == {4{1'b0}})     busy <= 1'b0 ; 
       else if (busy_filter == {4{1'b1}}) busy <= 1'b1 ;
@@ -114,7 +114,7 @@ always @(posedge wb_clk_i or posedge wb_rst_i)
       ie    <= 1'b0;
       irq <= 1'b0;
       reset_delay <= 8'hff;
-      drq <= ~busy;  // начальное значение сигнала DRQ определяется готовностью принтера
+      drq <= ~busy;            // начальное значение сигнала DRQ определяется готовностью принтера
       done <= 1'b0;          
       lp_stb_n <= 1'b1;        // строб данных
       wb_dat_o <= 16'h0000;
@@ -134,21 +134,18 @@ always @(posedge wb_clk_i or posedge wb_rst_i)
                               irq <= 1'b1 ;    // запрос на прерывание
                            end 
                            else   irq <= 1'b0 ;    // снимаем запрос на прерывания
-
                         end
                // Формирование запроса на прерывание         
-               i_req :           if (ie == 1'b0)    interrupt_state <= i_idle ;    
-                                else if (iack == 1'b1) begin
-                                    // если получено подтверждение прерывания от процессора
-                                    irq <= 1'b0 ;               // снимаем запрос
-                                    interrupt_trigger <= 1'b0;
-                                    interrupt_state <= i_wait ; // переходим к ожиданию окончания обработки
-                                end 
+               i_req :     if (ie == 1'b0)    interrupt_state <= i_idle ;    
+                           else if (iack == 1'b1) begin
+                              // если получено подтверждение прерывания от процессора
+                              irq <= 1'b0 ;               // снимаем запрос
+                              interrupt_trigger <= 1'b0;
+                              interrupt_state <= i_wait ; // переходим к ожиданию окончания обработки
+                           end 
                // Ожидание окончания обработки прерывания         
-               i_wait :
-                           if (iack == 1'b0)  interrupt_state <= i_idle ; 
+               i_wait :    if (iack == 1'b0)  interrupt_state <= i_idle ; 
       endcase
-
    
 //**************************************************
 // логика работы с шиной и принтером

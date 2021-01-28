@@ -4,44 +4,44 @@ module rk11 (
    input                  wb_clk_i,   // тактовая частота шины
    input                  wb_rst_i,   // сброс
    input    [3:0]         wb_adr_i,   // адрес 
-   input    [15:0]         wb_dat_i,   // входные данные
+   input    [15:0]        wb_dat_i,   // входные данные
    output reg [15:0]      wb_dat_o,   // выходные данные
    input                  wb_cyc_i,   // начало цикла шины
-   input                    wb_we_i,      // разрешение записи (0 - чтение)
+   input                  wb_we_i,    // разрешение записи (0 - чтение)
    input                  wb_stb_i,   // строб цикла шины
    input    [1:0]         wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
-   output reg            wb_ack_o,   // подтверждение выбора устройства
+   output reg             wb_ack_o,   // подтверждение выбора устройства
 
 // обработка прерывания   
    output reg            irq,         // запрос
-   input                  iack,       // подтверждение
+   input                 iack,        // подтверждение
    
 // DMA
    output reg             dma_req,    // запрос DMA
-   input                dma_gnt,    // подтверждение DMA
-   output reg[15:0]     dma_adr_o,  // выходной адрес при DMA-обмене
-   input[15:0]          dma_dat_i,  // входная шина данных DMA
+   input                  dma_gnt,    // подтверждение DMA
+   output reg[15:0]       dma_adr_o,  // выходной адрес при DMA-обмене
+   input[15:0]            dma_dat_i,  // входная шина данных DMA
    output reg[15:0]       dma_dat_o,  // выходная шина данных DMA
    output reg             dma_stb_o,  // строб цикла шины DMA
    output reg             dma_we_o,   // направление передачи DMA (0 - память->диск, 1 - диск->память) 
-   input dma_ack_i,                 // Ответ от устройства, с которым идет DMA-обмен
+   input                  dma_ack_i,  // Ответ от устройства, с которым идет DMA-обмен
    
 // интерфейс SD-карты
-   output sdcard_cs, 
-   output sdcard_mosi, 
-   output sdcard_sclk, 
-   input sdcard_miso, 
-   output reg sdreq,
-   input   sdack,
+   output                 sdcard_cs, 
+   output                 sdcard_mosi, 
+   output                 sdcard_sclk, 
+   input                  sdcard_miso, 
+   output reg             sdreq,
+   input                  sdack,
    
 // тактирование SD-карты
-   input sdclock,   
+   input                  sdclock,   
 
 // Адрес начала банка на карте
-   input [22:0] start_offset,
+   input [22:0]           start_offset,
    
 // отладочные сигналы
-   output [3:0] sdcard_debug
+   output [3:0]           sdcard_debug
    ); 
 
    // Сигналы упраления обменом с шиной
@@ -65,42 +65,42 @@ module rk11 (
    wire rkds_dru=1'b0;       // нестабильное состояние
    wire rkds_sin=1'b0;       // позиционирование не закончено - у нас так не бывает
    wire rkds_sok=1'b1;       // sector counter ok
-   wire rkds_dry; // drive ready
-   wire rkds_rwsrdy; // read/write/seek ready
-   reg rkds_wps; // write protected if 1
-   reg rkds_scsa; // disk address = sector counter
-   reg[3:0] rkds_sc; // sector counter
+   wire rkds_dry;            // drive ready
+   wire rkds_rwsrdy;         // read/write/seek ready
+   reg rkds_wps;             // write protected if 1
+   reg rkds_scsa;            // disk address = sector counter
+   reg[3:0] rkds_sc;         // sector counter
    wire[15:0] rkds; 
    
    // регистр ошибок - rker - 177402
-   reg rker_wce; // write check error
-   reg rker_cse; // checksum error
-   reg rker_nxs; // nx sector
-   reg rker_nxc; // nx cylinder
-   reg rker_nxd; // nx disk
-   reg rker_te; // timing error
-   reg rker_dlt; // data late
-   reg rker_nxm; // nxm
-   reg rker_pge; // programming error
-   reg rker_ske; // seek error
-   reg rker_wlo; // write lockout
-   reg rker_ovr; // overrun
-   reg rker_dre; // drive error
+   reg rker_wce;             // write check error
+   reg rker_cse;             // checksum error
+   reg rker_nxs;             // nx sector
+   reg rker_nxc;             // nx cylinder
+   reg rker_nxd;             // nx disk
+   reg rker_te;              // timing error
+   reg rker_dlt;             // data late
+   reg rker_nxm;             // nxm
+   reg rker_pge;             // programming error
+   reg rker_ske;             // seek error
+   reg rker_wlo;             // write lockout
+   reg rker_ovr;             // overrun
+   reg rker_dre;             // drive error
    wire[15:0] rker; 
    
    // регистр управления/состояния - rkcs - 177404
-   wire rkcs_err; // error
-   wire rkcs_he; // hard error
-   reg rkcs_scp; // search complete
-   reg rkcs_iba; // inhibit increment rkba
-   reg rkcs_fmt; // format
-   reg rkcs_exb; // extra bit, unused?
-   reg rkcs_sse; // stop on soft error
-   reg rkcs_rdy; // ready
-   reg rkcs_ide; // interrupt on done enable
-   reg[1:0] rkcs_mex; // bit 18, 17 of address
-   reg[2:0] rkcs_fu; // function code
-   reg rkcs_go; // go
+   wire rkcs_err;           // error
+   wire rkcs_he;            // hard error
+   reg rkcs_scp;            // search complete
+   reg rkcs_iba;            // inhibit increment rkba
+   reg rkcs_fmt;            // format
+   reg rkcs_exb;            // extra bit, unused?
+   reg rkcs_sse;            // stop on soft error
+   reg rkcs_rdy;            // ready
+   reg rkcs_ide;            // interrupt on done enable
+   reg[1:0] rkcs_mex;       // bit 18, 17 of address
+   reg[2:0] rkcs_fu;        // function code
+   reg rkcs_go;             // go
    wire[15:0] rkcs; 
    
    // счетчик пересылаемых слов - rkwc - 177406
@@ -174,18 +174,18 @@ module rk11 (
    assign rker = {rker_dre, rker_ovr, rker_wlo, rker_ske, rker_pge, rker_nxm, rker_dlt, rker_te, rker_nxd, rker_nxc, rker_nxs, 3'b000, rker_cse, rker_wce} ;
 
    // интерфейс к SDSPI
-   wire [22:0] sdcard_addr;        // адрес сектора карты
-   wire sdcard_read_done;    // флаг окончагия чтения
-   wire sdcard_write_done;   // флаг окончания записи
-   wire sdcard_error;        // флаг ошибки
-   wire [15:0] sdcard_xfer_out;  // слово; читаемое из буфера чтения
-   wire sdcard_idle;         // признак готовности контроллера
-   reg sdcard_read_start;        // строб начала чтения
-   reg sdcard_read_ack;          // флаг подтверждения окончания чтения
-   reg sdcard_write_start;       // строб начала записи
-   reg sdcard_write_ack;         // флаг подтверждения команды записи
+   wire [22:0] sdcard_addr;       // адрес сектора карты
+   wire sdcard_read_done;         // флаг окончагия чтения
+   wire sdcard_write_done;        // флаг окончания записи
+   wire sdcard_error;             // флаг ошибки
+   wire [15:0] sdcard_xfer_out;   // слово; читаемое из буфера чтения
+   wire sdcard_idle;              // признак готовности контроллера
+   reg sdcard_read_start;         // строб начала чтения
+   reg sdcard_read_ack;           // флаг подтверждения окончания чтения
+   reg sdcard_write_start;        // строб начала записи
+   reg sdcard_write_ack;          // флаг подтверждения команды записи
    reg [7:0] sdcard_xfer_addr;    // адрес в буфере чтния/записи
-   reg sdcard_xfer_write;        // строб записи буфера
+   reg sdcard_xfer_write;         // строб записи буфера
    reg [15:0] sdcard_xfer_in;     // слово; записываемое в буфер записи
 
 //***********************************************
@@ -197,9 +197,9 @@ module rk11 (
       .sdcard_mosi(sdcard_mosi), 
       .sdcard_sclk(sdcard_sclk), 
       .sdcard_miso(sdcard_miso),
-      .sdcard_debug(sdcard_debug),                  // информационные индикаторы   
+      .sdcard_debug(sdcard_debug),                // информационные индикаторы   
    
-      .sdcard_addr(sdcard_addr),                      // адрес блока на карте
+      .sdcard_addr(sdcard_addr),                  // адрес блока на карте
       .sdcard_idle(sdcard_idle),                  // сигнал готовности модуля к обмену
       
       // сигналы управления чтением 
@@ -220,7 +220,7 @@ module rk11 (
       .sdcard_xfer_write(sdcard_xfer_write),       // строб записи буфера
       .controller_clk(wb_clk_i),                   // синхросигнал общей шины
       .reset(reset),                               // сброс
-      .sdclk(sdclock)                               // синхросигнал SD-карты
+      .sdclk(sdclock)                              // синхросигнал SD-карты
    ); 
    
    // формирователь ответа на цикл шины   
@@ -250,10 +250,10 @@ module rk11 (
          rksi[2] <= 0 ; 
          rksi[1] <= 0 ; 
          rksi[0] <= 0 ; 
-         rkds_dri <= 3'b000 ; // drive ident
-         rkds_wps <= 1'b0 ; // not write protected
-         rkds_scsa <= 1'b1 ; // disk address = sector counter
-         rkds_sc <= 4'b0000 ; // sector counter
+         rkds_dri <= 3'b000 ;   
+         rkds_wps <= 1'b0 ;     
+         rkds_scsa <= 1'b1 ;    
+         rkds_sc <= 4'b0000 ;
          rker_wce <= 1'b0 ; 
          rker_cse <= 1'b0 ; 
          rker_nxs <= 1'b0 ; 
@@ -302,34 +302,27 @@ module rk11 (
                 // нет активного прерывания
               i_idle :
                         begin
-                           irq <= 1'b0 ;    // снимаем запрос на прерывания
-                           
+                           irq <= 1'b0 ;    // снимаем запрос на прерывания                           
                            //  Если поднят флаг завершения позиционирования - поднимаем триггер прерывания
                            if (rkcs_ide == 1'b1 & scpset == 1'b1)  begin
                               interrupt_state <= i_req ; 
                               irq <= 1'b1 ;    // запрос на прерывание
                               scpset <= 1'b0 ;  // снимаем флаг завершения позиционирования
                            end 
-                           
                            // Прерывание по готовности устройства
-                           if (rkcs_ide == 1'b1 & rkcs_rdy == 1'b1) begin
-                           
+                           if (rkcs_ide == 1'b1 & rkcs_rdy == 1'b1) begin                           
                               if (interrupt_trigger == 1'b0) begin
                                  interrupt_state <= i_req ; 
                                  irq <= 1'b1 ; 
                                  interrupt_trigger <= 1'b1 ; 
-                              end 
-                              
-                           end
-                           
-                           else interrupt_trigger <= 1'b0 ; 
-                           
+                              end                               
+                           end                           
+                           else interrupt_trigger <= 1'b0 ;                            
                         end
                // Формирование запроса на прерывание         
                i_req :
                         begin
-                           if (rkcs_ide == 1'b1) begin
-                           
+                           if (rkcs_ide == 1'b1) begin                           
                               // если прерывания вообще разрешены
                               if (iack == 1'b1) begin
                                  // если получено подтверждение прерывания от процессора
@@ -338,8 +331,7 @@ module rk11 (
                               end 
                            end
                            
-                           else begin
-                           
+                           else begin                           
                              // если прерывания запрещены
                               interrupt_trigger <= 1'b0 ; 
                               interrupt_state <= i_idle ; 
@@ -348,13 +340,9 @@ module rk11 (
                         
                         
                // Ожидание окончания обработки прерывания         
-               i_wait :
-                           if (iack == 1'b0)  interrupt_state <= i_idle ; 
+               i_wait :   if (iack == 1'b0)  interrupt_state <= i_idle ; 
              endcase
-                           
-
-            
-            
+                                                   
    //************************************************
    //*  Эмуляция последовательной смены секторов
    //************************************************
@@ -381,8 +369,7 @@ module rk11 (
             
           //*********************************************
           //* Обработка unibus-транзакций 
-          //*********************************************
-            
+          //*********************************************            
             // чтение регистров
             if (bus_read_req == 1'b1)   begin
                case (wb_adr_i[3:1])
@@ -405,13 +392,13 @@ module rk11 (
                      3'b010 :  begin  // RKCS
                                  rkcs_go <= wb_dat_i[0] ; 
                                  if ((wb_dat_i[0]) == 1'b1) rkcs_rdy <= 1'b0 ; // поднят флаг запуска - снимаем флаг готовности 
-                                 rkcs_fu <= wb_dat_i[3:1] ;  // код команды
+                                 rkcs_fu <= wb_dat_i[3:1] ;      // код команды
                                  rkcs_mex <= wb_dat_i[5:4] ; 
                                  rkcs_ide <= wb_dat_i[6] ; 
-                                 if (wb_dat_i[6] == 1'b1 &   // установка IDE, разрешение прерывания 
-                                     wb_dat_i[0] == 1'b0 &   // бит GO не установлен
-                                     rkcs_rdy == 1'b1)       // контроллер готов к приему команды  
-                                          interrupt_trigger <= 1'b1 ; // это сразу приводит к прерыванию
+                                 if (wb_dat_i[6] == 1'b1 &       // установка IDE, разрешение прерывания 
+                                     wb_dat_i[0] == 1'b0 &       // бит GO не установлен
+                                     rkcs_rdy == 1'b1)           // контроллер готов к приему команды  
+                                     interrupt_trigger <= 1'b1 ; // это сразу приводит к прерыванию
                               end
                               
                      3'b011 : begin   // RKWC
@@ -554,7 +541,7 @@ module rk11 (
                                        // запись окончилась без ошибок
                                        rkcs_mex <= 2'b00; //ram_phys_addr[17:16] ;  // адрес окончания записи - старшая часть 
                                        rkba <= {ram_phys_addr[15:1], 1'b0} ;  // младшая часть
-                                          // сектор меньше 11 - дорожку не меняем.
+                                       // сектор меньше 11 - дорожку не меняем.
                                        if ((rkda_sc[3:0]) < (4'b1011))  rkda_sc[3:0] <= rkda_sc[3:0] + 1'b1 ; // прсто увеличиваем # сектора 
                                        else  begin
                                           // переход на новую дорожку
@@ -732,7 +719,6 @@ module rk11 (
                            begin
                               if (rkdelay == 0)  begin
                                  if ((rkda_sc[3:0]) < (4'b1011))  begin
-                                    // 
                                     rkda_sc[3:0] <= rkda_sc[3:0] + 1'b1 ; 
                                  end
                                  else  begin
@@ -752,7 +738,7 @@ module rk11 (
                                        end 
                                     end 
                                  end 
-                                    // check if we need to do another sector, and setup for the next round if so
+
                                  if ((wcp) > (16'b0000000100000000))   wcp <= (wcp) - (16'b0000000100000000) ; 
                                  else   begin
                                     wcp <= {16{1'b0}} ; 

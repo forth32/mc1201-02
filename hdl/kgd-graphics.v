@@ -4,30 +4,30 @@
 module kgd (
 
 // шина wishbone
-   input                  wb_clk_i,   // тактовая частота шины
-   input                  wb_rst_i,   // сброс интерфейсного блока
-   input    [2:0]           wb_adr_i,   // адрес 
-   input    [15:0]          wb_dat_i,   // входные данные
-   output reg [15:0]        wb_dat_o,   // выходные данные
+   input                wb_clk_i,   // тактовая частота шины
+   input                wb_rst_i,   // сброс интерфейсного блока
+   input      [2:0]     wb_adr_i,   // адрес 
+   input      [15:0]    wb_dat_i,   // входные данные
+   output reg [15:0]    wb_dat_o,   // выходные данные
    input                wb_cyc_i,   // начало цикла шины
-   input                wb_we_i,      // разрешение записи (0 - чтение)
+   input                wb_we_i,    // разрешение записи (0 - чтение)
    input                wb_stb_i,   // строб цикла шины
-   input    [1:0]           wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
-   output reg              wb_ack_o,   // подтверждение выбоора устройства
+   input    [1:0]       wb_sel_i,   // выбор конкретных байтов для записи - старший, младший или оба
+   output reg           wb_ack_o,   // подтверждение выбоора устройства
 
-   input clk50,                // тактовый сигнал 50 Мгц
+   input                clk50,      // тактовый сигнал 50 Мгц
    
 // VGA      
-   output reg vgavideo,             // видеовыход 
+   output reg           vgavideo,   // видеовыход 
    
 // синхронизация с КСМ
-   input [10:0] col,  // колонка X, 0-1055
-   input [9:0]  row,  // строка Y, 0-627
+   input [10:0]         col,        // колонка X, 0-1055
+   input [9:0]          row,        // строка Y, 0-627
    
 // Управление
-   input    vreset,         // сброс графического блока
-   output reg genable,      // подключение графического контроллера к дисплею
-   output reg tdisable      // отключение текстового контроллера от дисплея
+   input                vreset,     // сброс графического блока
+   output reg           genable,    // подключение графического контроллера к дисплею
+   output reg           tdisable    // отключение текстового контроллера от дисплея
 );
 
 
@@ -55,8 +55,8 @@ kgdvram vbuf(
    
    // порт В, 1 бит - доступ от видеоконтроллера
    .address_b(lineadr+col[10:1]-11'd20),  // сумма адреса начала строки и номера пикселя, начиная с пикселя 11
-   .wren_b(1'b0),         // отсюда записи не бывает
-   .q_b(videobit),         // выход видеоданных
+   .wren_b(1'b0),                         // отсюда записи не бывает
+   .q_b(videobit),                        // выход видеоданных
    
    .clock(wb_clk_i)
 );   
@@ -85,7 +85,7 @@ always @(posedge wb_clk_i or posedge wb_rst_i)
 always @(posedge wb_clk_i) 
    if (wb_rst_i == 1'b1) begin
       genable <= 1'b0;      // после сброса графика отключена
-      tdisable <= 1'b0;       // текст включен
+      tdisable <= 1'b0;     // текст включен
       areg <= 14'o0;
       vbuf_write <= 1'b0;
    end
@@ -117,14 +117,14 @@ always @(posedge wb_clk_i)
                     end   
                     
             // 176640 - регистр данных
-            2'b01:   if (wb_sel_i[0] == 1'b1) 
-               if (reply0 == 1'b0) vbuf_write <=1'b1;
-               else vbuf_write <= 1'b0;
+            2'b01:  if (wb_sel_i[0] == 1'b1) 
+                        if (reply0 == 1'b0) vbuf_write <=1'b1;
+                        else vbuf_write <= 1'b0;
                      
             // 176644 - регистр адреса            
             2'b10:     begin
-               if (wb_sel_i[0] == 1'b1) areg[7:0] <= wb_dat_i[7:0];
-               if (wb_sel_i[1] == 1'b1) areg[13:8] <= wb_dat_i[13:8];
+                    if (wb_sel_i[0] == 1'b1) areg[7:0] <= wb_dat_i[7:0];
+                    if (wb_sel_i[1] == 1'b1) areg[13:8] <= wb_dat_i[13:8];
              end     
          endcase
    end
@@ -135,7 +135,7 @@ always @(posedge wb_clk_i)
 
 // Размер графического экрана - 400*286, в удвоенном режиме - 800*572. Первые 28 строк пусты.
 
-wire videobit;   // бит данных из видеопамяти
+wire videobit;      // бит данных из видеопамяти
 reg [16:0] lineadr; // адрес первого бита текущей строки в видеопамяти
 
 //**********************************  

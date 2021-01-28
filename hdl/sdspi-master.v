@@ -5,29 +5,29 @@
 module sdspi (
 
    // порты SDкарты
-   output reg sdcard_cs, 
-   output reg sdcard_mosi, 
-   output sdcard_sclk, 
-   input sdcard_miso,
+   output reg      sdcard_cs, 
+   output reg      sdcard_mosi, 
+   output          sdcard_sclk, 
+   input           sdcard_miso,
    
-   output reg[3:0] sdcard_debug,   // отладочные сигналы
+   output reg[3:0] sdcard_debug,       // отладочные сигналы
 
-   input[22:0] sdcard_addr,        // адрес сектора карты
-   output reg sdcard_idle,         // признак готовности контроллера
-   input sdcard_read_start,        // строб начала чтения
-   input sdcard_read_ack,          // флаг подтверждения окончания чтения
-   output reg sdcard_read_done,    // флаг окончагия чтения
-   input sdcard_write_start,       // строб начала записи
-   input sdcard_write_ack,         // флаг подтверждения команды записи
-   output reg sdcard_write_done,   // флаг окончания записи
-   output reg sdcard_error,        // флаг ошибки
-   input[7:0] sdcard_xfer_addr,    // адрес в буфере чтния/записи
-   output reg[15:0] sdcard_xfer_out,  // слово, читаемое из буфера чтения
-   input sdcard_xfer_write,        // строб записи буфера
-   input[15:0] sdcard_xfer_in,     // слово, записываемое в буфер записи
-   input controller_clk,            // тактирование буферных операций
-   input sdclk,
-   input reset 
+   input[22:0]     sdcard_addr,        // адрес сектора карты
+   output reg      sdcard_idle,        // признак готовности контроллера
+   input           sdcard_read_start,  // строб начала чтения
+   input           sdcard_read_ack,    // флаг подтверждения окончания чтения
+   output reg      sdcard_read_done,   // флаг окончагия чтения
+   input           sdcard_write_start, // строб начала записи
+   input           sdcard_write_ack,   // флаг подтверждения команды записи
+   output reg      sdcard_write_done,  // флаг окончания записи
+   output reg      sdcard_error,       // флаг ошибки
+   input[7:0]      sdcard_xfer_addr,   // адрес в буфере чтния/записи
+   output reg[15:0]sdcard_xfer_out,    // слово, читаемое из буфера чтения
+   input           sdcard_xfer_write,  // строб записи буфера
+   input[15:0]     sdcard_xfer_in,     // слово, записываемое в буфер записи
+   input           controller_clk,     // тактирование буферных операций - тактовый сигнал процессорной шины
+   input           sdclk,              // тактовый сигнал SD-карты
+   input           reset               // сброс контроллера
 );
 
 //  процесс записи:                                  процесс чтения
@@ -205,9 +205,7 @@ module sdspi (
                            sdcard_mosi <= 1'b1 ;   // MOSI=1
                            sd_state <= sd_sendcmd0 ; // следующий этап - CMD0
                            idle <= 1'b0 ; 
-//                           read_done <= 1'b0 ; 
                            sdcard_debug <= 4'b0011 ; 
-//                           card_error <= 1'b0 ; 
                         end
                // Отправка cmd0
                sd_sendcmd0 :
@@ -314,7 +312,6 @@ module sdspi (
                            end 
                         end
                         
-               // check r1 response after write command
                sd_write_checkresponse :
                         begin
                            if (sd_r1 == 7'b0000000)  begin
