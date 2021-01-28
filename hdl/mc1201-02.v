@@ -3,23 +3,7 @@
 //
 //================================================================================
 //
-//  Включаемые компоненты
-`define KGD_module
-
-// начальная скорость терминала
-//  0 - 1200
-//  1 - 2400
-//  2 - 4800
-//  3 - 9600
-//  4 - 19200
-//  5 - 38400
-//  6 - 57600
-//  7 - 115200
-`define TERMINAL_SPEED 3'd5
-
-// скорость второго последовательного интерфейса
-`define UART2SPEED 38400
-
+`include "config.v"
 //***********************************
 //*        Головной модуль          *
 //***********************************
@@ -30,18 +14,18 @@ module mc1201_02 (
    input    [3:0] sw,            // переключатели конфигурации
    
    // Интерфейс SDRAM
-   inout    [15:0]   DRAM_DQ,               //   SDRAM Data bus 16 Bits
-   output [12:0]   DRAM_ADDR,            //   SDRAM Address bus 12 Bits
-   output         DRAM_LDQM,            //   SDRAM Low-byte Data Mask 
-   output         DRAM_UDQM,            //   SDRAM High-byte Data Mask
-   output         DRAM_WE_N,            //   SDRAM Write Enable
-   output         DRAM_CAS_N,            //   SDRAM Column Address Strobe
-   output         DRAM_RAS_N,            //   SDRAM Row Address Strobe
-   output         DRAM_CS_N,            //   SDRAM Chip Select
-   output         DRAM_BA_0,            //   SDRAM Bank Address 0
-   output         DRAM_BA_1,            //   SDRAM Bank Address 0
-   output         DRAM_CLK,            //   SDRAM Clock
-   output         DRAM_CKE,            //   SDRAM Clock Enable
+   inout  [15:0]  DRAM_DQ,      //   SDRAM Data bus 16 Bits
+   output [12:0]  DRAM_ADDR,    //   SDRAM Address bus 12 Bits
+   output         DRAM_LDQM,    //   SDRAM Low-byte Data Mask 
+   output         DRAM_UDQM,    //   SDRAM High-byte Data Mask
+   output         DRAM_WE_N,    //   SDRAM Write Enable
+   output         DRAM_CAS_N,   //   SDRAM Column Address Strobe
+   output         DRAM_RAS_N,   //   SDRAM Row Address Strobe
+   output         DRAM_CS_N,    //   SDRAM Chip Select
+   output         DRAM_BA_0,    //   SDRAM Bank Address 0
+   output         DRAM_BA_1,    //   SDRAM Bank Address 0
+   output         DRAM_CLK,     //   SDRAM Clock
+   output         DRAM_CKE,     //   SDRAM Clock Enable
 
    // интерфейс SD-карты
    output         sdcard_cs, 
@@ -53,29 +37,29 @@ module mc1201_02 (
    output [3:0]   led,                                  
    
    // VGA
-   output vgah,          // горизонтальная синхронизация
-   output vgav,          // вертикакльная синхронизация
-   output [4:0]vgar,    // красный видеосигнал
-   output [5:0]vgag,    // зеленый видеосигнал
-   output [4:0]vgab,    // синий видеосигнал
+   output         vgah,         // горизонтальная синхронизация
+   output         vgav,         // вертикакльная синхронизация
+   output         [4:0]vgar,    // красный видеосигнал
+   output         [5:0]vgag,    // зеленый видеосигнал
+   output         [4:0]vgab,    // синий видеосигнал
 
    // PS/2
-   input ps2_clk, 
-   input ps2_data,
+   input          ps2_clk, 
+   input          ps2_data,
    
    // пищалка    
-   output buzzer, 
+   output         buzzer, 
     
    // дополнительный UART 
    output         irps_txd,
    input          irps_rxd,
    
    // LPT
-   output [7:0]         lp_data,    // данные для передачи к принтеру
-   output               lp_stb_n,   // строб записи в принтер
-   output               lp_init_n,  // строб сброса
-   input                lp_busy,    // сигнал занятости принтера
-   input                lp_err_n    // сигнал ошибки
+   output [7:0]   lp_data,    // данные для передачи к принтеру
+   output         lp_stb_n,   // строб записи в принтер
+   output         lp_init_n,  // строб сброса
+   input          lp_busy,    // сигнал занятости принтера
+   input          lp_err_n    // сигнал ошибки
    
 );
 
@@ -104,16 +88,16 @@ wire        wb_ack;
 
 // Основная шина процессора
 wire        cpu_access_req;            // разрешение доступа к шине
-wire [16:0]   cpu_adr;                     // шина адреса
-wire [15:0] cpu_data_out;                // выход шины данных
-wire         cpu_cyc;                     // строб транзакции
-wire         cpu_we;                     // направление передачи (1 - от процессора)
-wire [1:0]   cpu_bsel;                  // выбор байтов из слова
-wire         cpu_stb;                     // строб обмена по шине
-wire          cpu_ack;                     // подтверждение транзакции
+wire [16:0]   cpu_adr;                 // шина адреса
+wire [15:0] cpu_data_out;              // выход шины данных
+wire         cpu_cyc;                  // строб транзакции
+wire         cpu_we;                   // направление передачи (1 - от процессора)
+wire [1:0]   cpu_bsel;                 // выбор байтов из слова
+wire         cpu_stb;                  // строб обмена по шине
+wire          cpu_ack;                 // подтверждение транзакции
 
 // шина векторов прерываний                                       
-wire        vm_una;                      // запрос безадресного чтения
+wire        vm_una;                     // запрос безадресного чтения
 wire        vm_istb;                   // Строб приема вектора прерывания 
 wire        vm_iack;                   // подтверждение прерывания
 wire [15:0] vm_ivec;                   // вектор прерывания
@@ -182,35 +166,35 @@ wire        dw_irq, dw_iack;
 wire        rx_irq, rx_iack;
 wire        my_irq, my_iack;
 
-wire          global_reset;   // кнопка сброса
-wire         console_switch; // кнопка "пульт"
-wire          timer_switch;     // выключатель таймерного прерывания
-wire          reset_key;      // кнопка сброса
+wire        global_reset;   // кнопка сброса
+wire        console_switch; // кнопка "пульт"
+wire        timer_switch;   // выключатель таймерного прерывания
+wire        reset_key;      // кнопка сброса
 
 // Линии обмена с SD-картой от разных контроллеров
-wire          sdclock;        // тактирование SD-карты
-wire         rk_mosi;          // mosi от RK11
-wire         rk_cs;          // cs от RK11
-wire         dw_mosi;          // mosi от DW
-wire         dw_cs;          // cs от DW
-wire         dx_mosi;          // mosi от DW
-wire         dx_cs;          // cs от DW
-wire         my_mosi;          // mosi от MY
-wire         my_cs;          // cs от MY
+wire         sdclock;       // тактирование SD-карты
+wire         rk_mosi;       // mosi от RK11
+wire         rk_cs;         // cs от RK11
+wire         dw_mosi;       // mosi от DW
+wire         dw_cs;         // cs от DW
+wire         dx_mosi;       // mosi от DW
+wire         dx_cs;         // cs от DW
+wire         my_mosi;       // mosi от MY
+wire         my_cs;         // cs от MY
 // Сигналы диспетчера доступа к SD-карте
-wire          rk_sdreq;       // запрос доступа
+wire        rk_sdreq;       // запрос доступа
 reg         rk_sdack;       // разрешение доступа
-wire          dw_sdreq;
+wire        dw_sdreq;
 reg         dw_sdack; 
-wire          dx_sdreq;
+wire        dx_sdreq;
 reg         dx_sdack; 
-wire          my_sdreq;
+wire        my_sdreq;
 reg         my_sdack; 
 
-reg          timer_on;       // разрешение таймера
+reg         timer_on;       // разрешение таймера
 
 // линии невекторных прерываний 
-assign      sys_init = vm_init_out;            // сброс
+assign      sys_init = vm_init_out;          // сброс
 assign      vm_halt  = console_switch;       // переключатель программа-пульт
 assign      timer_irq  = i50Hz & timer_on;   // сигнал прерывания от таймера с маской разрешения
 
@@ -231,7 +215,7 @@ wire vgared_t,vgagreen_t,vgablue_t;  // видеосигналы
 // Линии графического дисплея
 wire vgavideo_g;    // видеовыход 
 wire genable;       // включение графического видеовыхода
-wire tdisable;        // отключение текстового видеовыхода
+wire tdisable;      // отключение текстового видеовыхода
 
 // Селектор источника видео
 wire vgagreen, vgablue, vgared;
@@ -249,10 +233,10 @@ assign vgar = (vgared == 1'b1) ? 5'b11110 : 5'b00000 ;
 //***************************************************
 //*    Кнопки
 //***************************************************
-assign      reset_key=button[0];    // кнопка сброса
-assign      console_switch=~button[1]; // кнопка "пульт"
+assign      reset_key=button[0];         // кнопка сброса
+assign      console_switch=~button[1];   // кнопка "пульт"
 assign      terminal_rst=~button[2] | ~sys_plock;  // сброс терминального модуля - от кнопки и автоматически по готовности PLL
-assign      timer_switch=~button[3];   // выключатель таймерного прерывания
+assign      timer_switch=~button[3];     // выключатель таймерного прерывания
  
 //********************************************
 //* Светодиоды
@@ -270,10 +254,10 @@ assign wb_clk  = sys_clk_p;
 pll100 corepll
 (
    .inclk0(clk50),
-   .c0(sys_clk_p), // 100МГц прямая фаза, основная тактовая частота
-   .c1(sys_clk_n), // 100МГц инверсная фаза
-   .c2(sdclock),   // 12.5 МГц тактовый сигнал SD-карты
-   .locked(sys_plock)  // флаг готовности PLL
+   .c0(sys_clk_p),    // 100МГц прямая фаза, основная тактовая частота
+   .c1(sys_clk_n),    // 100МГц инверсная фаза
+   .c2(sdclock),      // 12.5 МГц тактовый сигнал SD-карты
+   .locked(sys_plock) // флаг готовности PLL
 );
 
 //**************************************************************
@@ -285,12 +269,12 @@ wbc_rst reset
    .osc_clk(clk50),          // основной клок 50 МГц
    .sys_clk(wb_clk),         // сигнал синхронизации  wishbone
    .pll_lock(sys_plock),     // сигнал готовности PLL
-   .button(reset_key),         // кнопка сброса
+   .button(reset_key),       // кнопка сброса
    .sys_ready(dr_ready),     // вход готовности системных компонентов (влияет на sys_rst)
    .sys_dclo(vm_dclo_in),   
    .sys_aclo(vm_aclo_in),
    .global_reset(global_reset),    // выход кнопки сброса 
-   .sys_irq(i50Hz)          // сигнал прерывания KW11L с частотой 50 Гц.
+   .sys_irq(i50Hz)           // сигнал прерывания KW11L с частотой 50 Гц.
 );
 
 
@@ -309,19 +293,19 @@ vm2_wb #(.VM2_CORE_FIX_PREFETCH(0)) cpu
    .vm_clk_p(sys_clk_p),               // Положительный синхросигнал
    .vm_clk_n(sys_clk_n),               // Отрицательный синхросигнал
    .vm_clk_slow(sw[3]),                // Режим замедления процессора - определяется переключателем 3
-   .vm_clk_ena(cpu_clk_enable),         // счетчик замедления
+   .vm_clk_ena(cpu_clk_enable),        // счетчик замедления
 
 // Шина Wishbone                                       
    .wbm_gnt_i(cpu_access_req),         // 1 - разрешение cpu работать с шиной
                                        // 0 - DMA с внешними устройствами, cpu отключен от шины и бесконечно ждет ответа wb_ack
-   .wbm_adr_o(cpu_adr),                  // выход шины адреса
-   .wbm_dat_o(cpu_data_out),            // выход шины данных
+   .wbm_adr_o(cpu_adr),                // выход шины адреса
+   .wbm_dat_o(cpu_data_out),           // выход шины данных
    .wbm_dat_i(wb_mux),                 // вход шины данных
-   .wbm_cyc_o(cpu_cyc),                  // Строб цила wishbone
+   .wbm_cyc_o(cpu_cyc),                // Строб цила wishbone
    .wbm_we_o(cpu_we),                  // разрешение записи
    .wbm_sel_o(cpu_bsel),               // выбор байтов для передачи
-   .wbm_stb_o(cpu_stb),                  // строб данных
-   .wbm_ack_i(cpu_ack),                  // вход подтверждения данных
+   .wbm_stb_o(cpu_stb),                // строб данных
+   .wbm_ack_i(cpu_ack),                // вход подтверждения данных
 
 // Сбросы и прерывания
    .vm_init(vm_init_out),              // Выход сброса для периферии
@@ -440,18 +424,28 @@ end
 // Выбор консольного порта
 //**********************************
 wire          console_selector;       // флаг выбора консольного порта, 0 - терминальный модуль, 1 - ИРПС 2
-wire          uart1_txd, uart1_rxd;  // линии ИРПС 1
-wire         uart2_txd, uart2_rxd;  // линии ИРПС 2
-wire          terminal_tx,terminal_rx; // линии аппаратного терминала
-assign console_selector=sw[2];    // выбор определяется переключателем 2
+wire          uart1_txd, uart1_rxd;   // линии ИРПС 1
+wire         uart2_txd, uart2_rxd;    // линии ИРПС 2
+wire          terminal_tx,terminal_rx;// линии аппаратного терминала
+
+`ifdef KSM_module
+assign console_selector=sw[2];        // выбор определяется переключателем 2
 assign irps_txd = (console_selector == 0)? uart2_txd : uart1_txd;
 assign terminal_rx = (console_selector == 0)? uart1_txd : uart2_txd;
 assign uart1_rxd = (console_selector == 0)? terminal_tx : irps_rxd;
 assign uart2_rxd = (console_selector == 0)? irps_rxd : terminal_tx;
+`else
+assign console_selector=1'b0;
+assign irps_txd = uart1_txd;
+assign uart1_rxd = irps_rxd;
+`endif
 
+//**********************************************
 // Выбор скорости последовательных портов
+//**********************************************
 wire [31:0] uart1_speed;  // скорость ИРПС 1
 wire [31:0] uart2_speed;  // скорость ИРПС 2
+wire [31:0] baud2;        // делитель скорости второго порта ИРПС
 // Согласование скорости с терминальным модулем
 wire [31:0]   terminal_baud;    // делитель, соответствующий текущей скорости терминала                     
 assign  terminal_baud = 
@@ -459,16 +453,19 @@ assign  terminal_baud =
   (vspeed == 3'd1)   ? 32'd383: // 2400
   (vspeed == 3'd2)   ? 32'd191: // 4800
   (vspeed == 3'd3)   ? 32'd95:  // 9600
-  (vspeed == 3'd4)  ?  32'd47:  // 19200
-  (vspeed == 3'd5)  ?  32'd23:  // 38400
-  (vspeed == 3'd6)  ?  32'd15:  // 57600
-                    32'd7;  // 115200
-// делитель скорости второго порта ИРПС
-wire [31:0] baud2; 
+  (vspeed == 3'd4)   ? 32'd47:  // 19200
+  (vspeed == 3'd5)   ? 32'd23:  // 38400
+  (vspeed == 3'd6)   ? 32'd15:  // 57600
+                       32'd7;   // 115200
 assign  baud2 = 921600/`UART2SPEED-1;
 // Селектор делителей скорости обоих портов в зависимости от того, кто из них подключен к терминалу
+`ifdef KSM_module
 assign uart1_speed = (console_selector == 0)? terminal_baud : baud2;
 assign uart2_speed = (console_selector == 0)? baud2 : terminal_baud;
+`else
+assign uart1_speed = baud2;
+assign uart2_speed = baud2;
+`endif
 
 //**********************************
 //*     ирпс1 (консоль)
@@ -504,6 +501,7 @@ wbc_uart uart
 //**********************************
 //*     ирпс2
 //**********************************
+`ifdef IRPS2_module
 wbc_uart uart2
 (
    .wb_clk_i(wb_clk),
@@ -531,12 +529,19 @@ wbc_uart uart2
    .cfg_pena(1'b0),
    .cfg_podd(1'b0)
 );
+`else 
+assign uart2txd=1'b1;
+assign irpstx2_irq=1'b0;
+assign irpsrx2_irq=1'b0;
+`endif
 
 //**********************************
 //*   Текстовый терминал КСМ
 //**********************************
 wire [10:0] col;  // колонка X, 0-1055
 wire [9:0]  row;  // строка Y, 0-627
+
+`ifdef KSM_module
 
 ksm terminal(
    // VGA
@@ -552,17 +557,25 @@ ksm terminal(
    .ps2_clk(ps2_clk), 
    .ps2_data(ps2_data), 
    
-   .buzzer(nbuzzer),      // пищалка
+   .buzzer(nbuzzer),            // пищалка
    
-   .vspeed(vspeed),      // текущая скорость порта
+   .vspeed(vspeed),             // текущая скорость порта
    .initspeed(`TERMINAL_SPEED), // начальная скорость порта
    
    .col(col),
    .row(row),
    
    .clk50(clk50), 
-   .reset(terminal_rst)      // сброс видеоподсистемы
+   .reset(terminal_rst)         // сброс видеоподсистемы
 );
+`else
+assign nbuzzer=1'b0;
+assign vgah=1'b0;
+assign vgav=1'b0;
+assign vgared_t=1'b0;
+assign vgagreen_t=1'b0;
+assign vgablue_t=1'b0;
+`endif
 
 //**********************************
 //*  Графическая подсистема КГД
@@ -583,18 +596,20 @@ kgd graphics(
    .clk50 (clk50),
    
    .vreset(terminal_rst),  // сброс графической подсистемы
-   .vgavideo(vgavideo_g),      // видеовыход 
-   .col(col),               // счетчик видеостолбцов
-   .row(row),               // счетчик видеострок
-   .tdisable(tdisable),      // отключение тектового экрана
+   .vgavideo(vgavideo_g),  // видеовыход 
+   .col(col),              // счетчик видеостолбцов
+   .row(row),              // счетчик видеострок
+   .tdisable(tdisable),    // отключение тектового экрана
    .genable(genable)       // подключение графического экрана
 );
 `else 
 assign kgd_ack=1'b0;
 assign tdisable=1'b0;
 assign genable=1'b0;
+assign vgavideo_g=1'b0;
 `endif
 
+`ifdef IRPR_module
 //**********************************
 //*  ИРПР
 //**********************************
@@ -611,12 +626,16 @@ irpr printer (
    .irq(lpt_irq),
    .iack(lpt_iack),
    // интерфейс к принтеру
-   .lp_data(lp_data),    // данные для передачи к принтеру
+   .lp_data(lp_data),     // данные для передачи к принтеру
    .lp_stb_n(lp_stb_n),   // строб записи в принтер
-   .lp_init_n(lp_init_n),  // строб сброса
-   .lp_busy(lp_busy),    // сигнал занятости принтера
+   .lp_init_n(lp_init_n), // строб сброса
+   .lp_busy(lp_busy),     // сигнал занятости принтера
    .lp_err_n(lp_err_n)    // сигнал ошибки
 );
+`else 
+assign lpt_ack=1'b0;
+assign lpt_irq=1'b0;
+`endif
 
 //****************************************************
 //*  Дисковый контроллер RK11D
@@ -634,34 +653,35 @@ wire [15:0] rk11_dma_out;
 
 wire [3:0] rksddebug;
 
+`ifdef RK_module
 
 rk11 rkdisk (
 
 // шина wishbone
-   .wb_clk_i(wb_clk),   // тактовая частота шины
-   .wb_rst_i(sys_init),   // сброс
-   .wb_adr_i(wb_adr[3:0]),   // адрес 
-   .wb_dat_i(wb_out),   // входные данные
-   .wb_dat_o(rk11_dat),   // выходные данные
-   .wb_cyc_i(wb_cyc),   // начало цикла шины
-   .wb_we_i(wb_we),      // разрешение записи (0 - чтение)
-   .wb_stb_i(rk11_stb),   // строб цикла шины
-   .wb_sel_i(wb_sel),   // выбор конкретных байтов для записи - старший, младший или оба
-   .wb_ack_o(rk11_ack),   // подтверждение выбора устройства
+   .wb_clk_i(wb_clk),      // тактовая частота шины
+   .wb_rst_i(sys_init),    // сброс
+   .wb_adr_i(wb_adr[3:0]), // адрес 
+   .wb_dat_i(wb_out),      // входные данные
+   .wb_dat_o(rk11_dat),    // выходные данные
+   .wb_cyc_i(wb_cyc),      // начало цикла шины
+   .wb_we_i(wb_we),        // разрешение записи (0 - чтение)
+   .wb_stb_i(rk11_stb),    // строб цикла шины
+   .wb_sel_i(wb_sel),      // выбор конкретных байтов для записи - старший, младший или оба
+   .wb_ack_o(rk11_ack),    // подтверждение выбора устройства
 
 // обработка прерывания   
-   .irq(rk11_irq),      // запрос
+   .irq(rk11_irq),         // запрос
    .iack(rk11_iack),       // подтверждение
    
 // DMA
-   .dma_req(rk11_dma_req),    // запрос DMA
-   .dma_gnt(rk11_dma_gnt),    // подтверждение DMA
-   .dma_adr_o(rk11_adr),      // выходной адрес при DMA-обмене
-   .dma_dat_i(wb_mux),        // входная шина данных DMA
-   .dma_dat_o(rk11_dma_out),        // выходная шина данных DMA
-   .dma_stb_o(rk11_dma_stb),  // строб цикла шины DMA
-   .dma_we_o(rk11_dma_we),          // направление передачи DMA (0 - память->диск, 1 - диск->память) 
-   .dma_ack_i(rk11_dma_ack),        // Ответ от устройства, с которым идет DMA-обмен
+   .dma_req(rk11_dma_req), // запрос DMA
+   .dma_gnt(rk11_dma_gnt), // подтверждение DMA
+   .dma_adr_o(rk11_adr),   // выходной адрес при DMA-обмене
+   .dma_dat_i(wb_mux),     // входная шина данных DMA
+   .dma_dat_o(rk11_dma_out), // выходная шина данных DMA
+   .dma_stb_o(rk11_dma_stb), // строб цикла шины DMA
+   .dma_we_o(rk11_dma_we),   // направление передачи DMA (0 - память->диск, 1 - диск->память) 
+   .dma_ack_i(rk11_dma_ack), // Ответ от устройства, с которым идет DMA-обмен
    
 // интерфейс SD-карты
    .sdcard_cs(rk_cs), 
@@ -678,11 +698,21 @@ rk11 rkdisk (
 // отладочные сигналы
    .sdcard_debug(rksddebug)
    ); 
+
+`else 
+assign rk11_ack=1'b0;
+assign rk11_dma_req=1'b0;
+assign rk_sdreq = 1'b0;
+assign rk11_irq=1'b0;
+`endif
+
   
 //**********************************
 //*   Дисковый контроллер DW
 //**********************************
 wire [3:0] dwsddebug;
+
+`ifdef DW_module
 
 dw hdd(
 // шина wishbone
@@ -692,14 +722,14 @@ dw hdd(
    .wb_dat_i(wb_out),   // входные данные
    .wb_dat_o(dw_dat),   // выходные данные
    .wb_cyc_i(wb_cyc),   // начало цикла шины
-   .wb_we_i(wb_we),      // разрешение записи (0 - чтение)
+   .wb_we_i(wb_we),     // разрешение записи (0 - чтение)
    .wb_stb_i(dw_stb),   // строб цикла шины
    .wb_sel_i(wb_sel),   // выбор конкретных байтов для записи - старший, младший или оба
    .wb_ack_o(dw_ack),   // подтверждение выбора устройства
 
 // обработка прерывания   
-   .irq(dw_irq),      // запрос
-   .iack(dw_iack),    // подтверждение
+   .irq(dw_irq),        // запрос
+   .iack(dw_iack),      // подтверждение
    
    
 // интерфейс SD-карты
@@ -717,27 +747,36 @@ dw hdd(
    .sdcard_debug(dwsddebug)
    ); 
 
+`else 
+assign dw_ack=1'b0;
+assign dw_sdreq = 1'b0;
+assign dw_irq=1'b0;
+`endif
+
+
 //**********************************
 //*   Дисковый контроллер RX01
 //**********************************
 wire [3:0] rxsddebug;
 
+`ifdef DX_module
+
 rx01 dxdisk (
 // шина wishbone
-   .wb_clk_i(wb_clk),   // тактовая частота шины
-   .wb_rst_i(sys_init),   // сброс
-   .wb_adr_i(wb_adr[1:0]),   // адрес 
-   .wb_dat_i(wb_out),   // входные данные
-   .wb_dat_o(rx_dat),   // выходные данные
-   .wb_cyc_i(wb_cyc),   // начало цикла шины
-   .wb_we_i(wb_we),      // разрешение записи (0 - чтение)
-   .wb_stb_i(rx_stb),   // строб цикла шины
-   .wb_sel_i(wb_sel),   // выбор конкретных байтов для записи - старший, младший или оба
-   .wb_ack_o(rx_ack),   // подтверждение выбора устройства
+   .wb_clk_i(wb_clk),      // тактовая частота шины
+   .wb_rst_i(sys_init),    // сброс
+   .wb_adr_i(wb_adr[1:0]), // адрес 
+   .wb_dat_i(wb_out),      // входные данные
+   .wb_dat_o(rx_dat),      // выходные данные
+   .wb_cyc_i(wb_cyc),      // начало цикла шины
+   .wb_we_i(wb_we),        // разрешение записи (0 - чтение)
+   .wb_stb_i(rx_stb),      // строб цикла шины
+   .wb_sel_i(wb_sel),      // выбор конкретных байтов для записи - старший, младший или оба
+   .wb_ack_o(rx_ack),      // подтверждение выбора устройства
 
 // обработка прерывания   
-   .irq(rx_irq),      // запрос
-   .iack(rx_iack),    // подтверждение
+   .irq(rx_irq),           // запрос
+   .iack(rx_iack),         // подтверждение
    
    
 // интерфейс SD-карты
@@ -756,6 +795,12 @@ rx01 dxdisk (
 // отладочные сигналы
    .sdcard_debug(rxsddebug)
    ); 
+
+`else 
+assign rx_ack=1'b0;
+assign dx_sdreq = 1'b0;
+assign rx_irq=1'b0;
+`endif
    
 //****************************************************
 //*  Дисковый контроллер MY
@@ -774,33 +819,35 @@ wire [15:0] my_dma_out;
 wire [3:0] mysddebug;
 
 
+`ifdef MY_module
+
 fdd_my mydisk (
 
 // шина wishbone
-   .wb_clk_i(wb_clk),   // тактовая частота шины
-   .wb_rst_i(sys_init),   // сброс
-   .wb_adr_i(wb_adr[3:0]),   // адрес 
-   .wb_dat_i(wb_out),   // входные данные
-   .wb_dat_o(my_dat),   // выходные данные
-   .wb_cyc_i(wb_cyc),   // начало цикла шины
-   .wb_we_i(wb_we),      // разрешение записи (0 - чтение)
-   .wb_stb_i(my_stb),   // строб цикла шины
-   .wb_sel_i(wb_sel),   // выбор конкретных байтов для записи - старший, младший или оба
-   .wb_ack_o(my_ack),   // подтверждение выбора устройства
+   .wb_clk_i(wb_clk),       // тактовая частота шины
+   .wb_rst_i(sys_init),     // сброс
+   .wb_adr_i(wb_adr[3:0]),  // адрес 
+   .wb_dat_i(wb_out),       // входные данные
+   .wb_dat_o(my_dat),       // выходные данные
+   .wb_cyc_i(wb_cyc),       // начало цикла шины
+   .wb_we_i(wb_we),         // разрешение записи (0 - чтение)
+   .wb_stb_i(my_stb),       // строб цикла шины
+   .wb_sel_i(wb_sel),       // выбор конкретных байтов для записи - старший, младший или оба
+   .wb_ack_o(my_ack),       // подтверждение выбора устройства
 
 // обработка прерывания   
-   .irq(my_irq),      // запрос
-   .iack(my_iack),       // подтверждение
+   .irq(my_irq),            // запрос
+   .iack(my_iack),          // подтверждение
    
 // DMA
    .dma_req(my_dma_req),    // запрос DMA
    .dma_gnt(my_dma_gnt),    // подтверждение DMA
    .dma_adr_o(my_adr),      // выходной адрес при DMA-обмене
-   .dma_dat_i(wb_mux),        // входная шина данных DMA
-   .dma_dat_o(my_dma_out),        // выходная шина данных DMA
+   .dma_dat_i(wb_mux),      // входная шина данных DMA
+   .dma_dat_o(my_dma_out),  // выходная шина данных DMA
    .dma_stb_o(my_dma_stb),  // строб цикла шины DMA
-   .dma_we_o(my_dma_we),          // направление передачи DMA (0 - память->диск, 1 - диск->память) 
-   .dma_ack_i(my_dma_ack),        // Ответ от устройства, с которым идет DMA-обмен
+   .dma_we_o(my_dma_we),    // направление передачи DMA (0 - память->диск, 1 - диск->память) 
+   .dma_ack_i(my_dma_ack),  // Ответ от устройства, с которым идет DMA-обмен
    
 // интерфейс SD-карты
    .sdcard_cs(my_cs), 
@@ -817,6 +864,13 @@ fdd_my mydisk (
 // отладочные сигналы
    .sdcard_debug(mysddebug)
    ); 
+
+`else 
+assign my_ack=1'b0;
+assign my_dma_req=1'b0;
+assign my_sdreq = 1'b0;
+assign my_irq=1'b0;
+`endif
 
 //**********************************
 //*  Диспетчер доступа к SD-карте
@@ -854,9 +908,9 @@ assign sdcard_mosi =
                    rk_mosi; // RK по умолчанию
 
 assign sdcard_cs =
-         dw_sdack? dw_cs:    // DW
-         dx_sdack? dx_cs:    // DX
-         my_sdack? my_cs:    // MY
+         dw_sdack? dw_cs:   // DW
+         dx_sdack? dx_cs:   // DX
+         my_sdack? my_cs:   // MY
                    rk_cs;   // RK по умолчанию
    
 //**********************************
@@ -982,10 +1036,24 @@ assign wb_mux =
 //**********************************
 //* Сигнал разрешения таймера
 //**********************************
-initial timer_on=1;
+initial timer_on=1;  // после подачи питания таймер включен
+reg [1:0] tbshift;
+reg tbevent;
 
-always @ (posedge timer_switch)
-  if (timer_switch == 1) timer_on <= ~timer_on;
+// подавление дребезга кнопок
+always @ (posedge i50Hz) begin
+  // вводим кнопку в сдвиговый регистр
+  tbshift[0] <= timer_switch;
+  tbshift[1] <= tbshift[0];
+  // регистр заполнен - кнопка стабильно нажата
+  if (&tbshift == 1'b1) begin
+		if (tbevent == 1'b0) timer_on <= ~timer_on;  // переключаем состояние таймера
+		tbevent <= 1'b1;										// запрещаем дальнейшие изменения состояния таймиера
+  end
+  // регистр очищен - кнопка стабильно отпущена
+  else if (|tbshift == 1'b0) tbevent <= 1'b0;     // разрешаем изменения состояния таймера
+end  
   
-
 endmodule
+
+
