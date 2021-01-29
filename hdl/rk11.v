@@ -218,6 +218,8 @@ module rk11 (
       .sdcard_xfer_out(sdcard_xfer_out),           // слово, читаемое из буфера чтения
       .sdcard_xfer_in(sdcard_xfer_in),             // слово, записываемое в буфер записи
       .sdcard_xfer_write(sdcard_xfer_write),       // строб записи буфера
+		
+		.mode(1'b1), 											// режим ведущего контроллера
       .controller_clk(wb_clk_i),                   // синхросигнал общей шины
       .reset(reset),                               // сброс
       .sdclk(sdclock)                              // синхросигнал SD-карты

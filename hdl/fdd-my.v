@@ -201,7 +201,7 @@ reg [7:0] dma_timer;
 //***********************************************
 //*  Контроллер SD-карты
 //***********************************************
-sdspi_slave sd1 (
+sdspi sd1 (
       // интерфейс к карте
       .sdcard_cs(sdcard_cs), 
       .sdcard_mosi(sdcard_mosi), 
@@ -228,6 +228,7 @@ sdspi_slave sd1 (
       .sdcard_xfer_out(sdbuf_dataout),           // слово, читаемое из буфера чтения
       .sdcard_xfer_in(sdbuf_datain),             // слово, записываемое в буфер записи
       .sdcard_xfer_write(sdbuf_we),              // разрешение записи буфера
+		.mode(1'b0),                               // режим ведомого контроллера
       .controller_clk(wb_clk_i),                 // синхросигнал общей шины
       .reset(reset),                             // сброс
       .sdclk(sdclock)                            // синхросигнал SD-карты

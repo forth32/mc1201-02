@@ -26,6 +26,7 @@ module sdspi (
    input           sdcard_xfer_write,  // строб записи буфера
    input[15:0]     sdcard_xfer_in,     // слово, записываемое в буфер записи
    input           controller_clk,     // тактирование буферных операций - тактовый сигнал процессорной шины
+	input				 mode,               // режим работы: 0 - ведомый, 1 - ведущий
    input           sdclk,              // тактовый сигнал SD-карты
    input           reset               // сброс контроллера
 );
@@ -186,7 +187,16 @@ module sdspi (
    always @(posedge clk)  begin
      // сброс
          if (reset == 1'b1) begin
-               sd_state <= sd_reset ; 
+               if (mode == 1'b1) begin 
+					   sd_state <= sd_reset ; 
+					end	
+					else begin 
+					  sd_state <= sd_idle;
+                 idle <= 1'b1 ;          
+                 do_readr3 <= 1'b0 ; 
+                 do_readr7 <= 1'b0 ; 
+                 sdcard_mosi <= 1'b1 ;   // MOSI=1
+					end
                read_done <= 1'b0 ;       // снимаем флаг окончания чтения
                write_done <= 1'b0 ;       // и записи
                card_error <= 1'b0 ;     // снимаем флаг ошибки
