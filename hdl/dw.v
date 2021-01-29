@@ -177,7 +177,7 @@ sdspi_slave sd1 (
       .sdcard_xfer_write(drq),                     // разрешение записи буфера
       .controller_clk(wb_clk_i),                   // синхросигнал общей шины
       .reset(reset),                               // сброс
-      .sdclk(sdclock)                               // синхросигнал SD-карты
+      .sdclk(sdclock)                              // синхросигнал SD-карты
 ); 
    
 //**************************************

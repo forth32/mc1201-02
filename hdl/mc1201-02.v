@@ -300,8 +300,11 @@ wbc_rst reset
 
 // счетчик замедления процессора
 reg [4:0] cpudelay;
-always @ (posedge sys_clk_p) cpudelay <= cpudelay + 1'b1;
-wire cpu_clk_enable=&cpudelay;  // формирователь импульса с заполнением 1/16
+always @ (posedge sys_clk_p) begin
+    if (cpudelay != 5'd19) cpudelay <= cpudelay + 1'b1;  // считаем от 0 до 19
+	 else cpudelay <= 5'd0;
+end	 
+wire cpu_clk_enable=~(|cpudelay);  // формирователь импульса с заполнением 1/16
 
 vm2_wb #(.VM2_CORE_FIX_PREFETCH(0)) cpu
 (
