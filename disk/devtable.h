@@ -1,5 +1,5 @@
 // Размер одного полного банка в блоках
-#define banksize 0x20000
+#define banksize 0x40000
 
 struct devtable_t{
     char* name;       // имя устройства

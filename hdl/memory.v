@@ -7,12 +7,12 @@
 //*****************************************************
 
 module rom_monitor(
-   input            wb_clk_i,
-   input    [11:0]   adr_i,
+   input           wb_clk_i,
+   input  [11:0]   adr_i,
    output [15:0]   wb_dat_o,
-   input            wb_cyc_i,
-   input            wb_stb_i,
-   output         wb_ack_o
+   input           wb_cyc_i,
+   input           wb_stb_i,
+   output          wb_ack_o
 );
 reg [1:0]ack;
 

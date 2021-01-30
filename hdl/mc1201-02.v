@@ -251,8 +251,10 @@ assign      timer_switch=~button[3];     // выключатель таймер�
 //********************************************
 //* Светодиоды
 //********************************************
-assign led[0] = ~rk_sdreq;   // запрос обмена диска RK
-assign led[1] = ~dw_sdreq;   // запрос обмена диска DW
+//assign led[0] = ~rk_sdreq;   // запрос обмена диска RK
+//assign led[1] = ~dw_sdreq;   // запрос обмена диска DW
+assign led[0] = sw[0];   // запрос обмена диска RK
+assign led[1] = sw[1];   // запрос обмена диска DW
 assign led[2] = ~my_sdreq | ~dx_sdreq;   // запрос обмена диска MY
 assign led[3] = ~timer_on;   // индикация включения таймера
 
@@ -304,8 +306,8 @@ reg [4:0] cpudelay;
 
 always @ (posedge sys_clk_p) begin
     if (cpudelay != 5'd21) cpudelay <= cpudelay + 1'b1;  // считаем от 0 до 22
-	 else cpudelay <= 5'd0;
-end	 
+    else cpudelay <= 5'd0;
+end    
 wire cpu_clk_enable=~(|cpudelay);  // формирователь импульса с заполнением 1/21
 
 vm2_wb #(.VM2_CORE_FIX_PREFETCH(0)) cpu
@@ -464,6 +466,7 @@ assign uart1_rxd = irps_rxd;
 wire [31:0] uart1_speed;  // скорость ИРПС 1
 wire [31:0] uart2_speed;  // скорость ИРПС 2
 wire [31:0] baud2;        // делитель скорости второго порта ИРПС
+
 // Согласование скорости с терминальным модулем
 wire [31:0]   terminal_baud;    // делитель, соответствующий текущей скорости терминала                     
 assign  terminal_baud = 
@@ -475,7 +478,19 @@ assign  terminal_baud =
   (vspeed == 3'd5)   ? 32'd23:  // 38400
   (vspeed == 3'd6)   ? 32'd15:  // 57600
                        32'd7;   // 115200
-assign  baud2 = 921600/`UART2SPEED-1;
+                       
+// Выбор скорости второго UART                        
+// assign  baud2 = 921600/`UART2SPEED-1;
+assign baud2 = 
+  (`UART2SPEED == 3'd0)   ? 32'd767: // 1200
+  (`UART2SPEED == 3'd1)   ? 32'd383: // 2400
+  (`UART2SPEED == 3'd2)   ? 32'd191: // 4800
+  (`UART2SPEED == 3'd3)   ? 32'd95:  // 9600
+  (`UART2SPEED == 3'd4)   ? 32'd47:  // 19200
+  (`UART2SPEED == 3'd5)   ? 32'd23:  // 38400
+  (`UART2SPEED == 3'd6)   ? 32'd15:  // 57600
+                            32'd7;   // 115200
+
 // Селектор делителей скорости обоих портов в зависимости от того, кто из них подключен к терминалу
 `ifdef KSM_module
 assign uart1_speed = (console_selector == 0)? terminal_baud : baud2;
@@ -709,7 +724,7 @@ rk11 rkdisk (
    .sdclock(sdclock),
    .sdreq(rk_sdreq),
    .sdack(rk_sdack),
-	.sdmode(`RK_sdmode),           // режим ведущего-ведомого
+   .sdmode(`RK_sdmode),           // режим ведущего-ведомого
    
 // Адрес массива дисков на карте
    .start_offset({6'b000000,diskbank,18'h0}),
@@ -758,7 +773,7 @@ dw hdd(
    .sdclock(sdclock),
    .sdreq(dw_sdreq),
    .sdack(dw_sdack),
-	.sdmode(`DW_sdmode),          
+   .sdmode(`DW_sdmode),          
 
 // Адрес массива дисков на карте
    .start_offset({6'b000000,diskbank,18'hc000}),
@@ -805,7 +820,7 @@ rx01 dxdisk (
    .sdcard_miso(sdcard_miso), 
 
 
-	.sdmode(`DX_sdmode),          
+   .sdmode(`DX_sdmode),          
    .sdreq(dx_sdreq),
    .sdack(dx_sdack),
    .sdclock(sdclock),
@@ -878,7 +893,7 @@ fdd_my mydisk (
    .sdclock(sdclock),
    .sdreq(my_sdreq),
    .sdack(my_sdack),
-	.sdmode(`MY_sdmode),          
+   .sdmode(`MY_sdmode),          
    
 // Адрес массива дисков на карте
    .start_offset({6'b000000,diskbank,18'h2e000}),

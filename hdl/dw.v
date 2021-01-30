@@ -26,7 +26,7 @@ module dw (
    input                sdcard_miso, 
    output reg           sdreq,      // запрос доступа к карте
    input                sdack,      // подтверждение доступа к карте
-	input                sdmode,     // режим SDSPI
+   input                sdmode,     // режим SDSPI
    
 // тактирование SD-карты
    input                sdclock,   
@@ -176,7 +176,7 @@ sdspi sd1 (
       .sdcard_xfer_out(sdcard_xfer_out),           // слово, читаемое из буфера чтения
       .sdcard_xfer_in(sdcard_xfer_in),             // слово, записываемое в буфер записи
       .sdcard_xfer_write(drq),                     // разрешение записи буфера
-		.mode(sdmode),                               // режим ведущего-ведомого контроллера
+      .mode(sdmode),                               // режим ведущего-ведомого контроллера
       .controller_clk(wb_clk_i),                   // синхросигнал общей шины
       .reset(reset),                               // сброс
       .sdclk(sdclock)                              // синхросигнал SD-карты

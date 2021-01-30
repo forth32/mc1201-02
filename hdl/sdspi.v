@@ -26,7 +26,7 @@ module sdspi (
    input           sdcard_xfer_write,  // строб записи буфера
    input[15:0]     sdcard_xfer_in,     // слово, записываемое в буфер записи
    input           controller_clk,     // тактирование буферных операций - тактовый сигнал процессорной шины
-	input				 mode,               // режим работы: 0 - ведомый, 1 - ведущий
+   input           mode,               // режим работы: 0 - ведомый, 1 - ведущий
    input           sdclk,              // тактовый сигнал SD-карты
    input           reset               // сброс контроллера
 );
@@ -188,22 +188,22 @@ module sdspi (
      // сброс
          if (reset == 1'b1) begin
                if (mode == 1'b1) begin 
-					   // режим ведущего  - переходим к инициализации карты
-					   sd_state <= sd_reset ; 
-					end	
-					else begin 
-					   // режим ведомого - переходим в состояние ожидания
-					   sd_state <= sd_idle;  
-						// заранее настраиваем регистры как после инициализации
+                  // режим ведущего  - переходим к инициализации карты
+                  sd_state <= sd_reset ; 
+               end   
+               else begin 
+                  // режим ведомого - переходим в состояние ожидания
+                  sd_state <= sd_idle;  
+                  // заранее настраиваем регистры как после инициализации
                   idle <= 1'b1 ;          
                   do_readr7 <= 1'b0 ; 
                   sdcard_mosi <= 1'b1 ;   // MOSI=1
-						sdcard_cs <= 1'b0;      // CS=0
-					end
+                  sdcard_cs <= 1'b0;      // CS=0
+               end
                do_readr3 <= 1'b0 ; 
                read_done <= 1'b0 ;       // снимаем флаг окончания чтения
-               write_done <= 1'b0 ;       // и записи
-               card_error <= 1'b0 ;     // снимаем флаг ошибки
+               write_done <= 1'b0 ;      // и записи
+               card_error <= 1'b0 ;      // снимаем флаг ошибки
                sdcard_debug <= 4'b0011 ; 
          end
          else  begin
@@ -326,7 +326,7 @@ module sdspi (
                            end 
                         end
                         
-		         // ожидание готовности карты принять данные для записи
+               // ожидание готовности карты принять данные для записи
                sd_write_checkresponse :
                         begin
                            if (sd_r1 == 7'b0000000)  begin
@@ -351,7 +351,7 @@ module sdspi (
                               counter <= 15 ; 
                            end 
                         end
-					// запись блока данных			
+               // запись блока данных         
                sd_write :
                         begin
                            sdcard_mosi <= sd_word[15] ; 
@@ -364,7 +364,7 @@ module sdspi (
                               counter <= 15 ; 
                            end 
                         end
-					// запись последнего слова данных 			
+               // запись последнего слова данных          
                sd_write_last :
                         begin
                            sdcard_mosi <= sd_word[15] ; 
@@ -375,7 +375,7 @@ module sdspi (
                               counter <= 15 ; 
                            end 
                         end
-					// запись CRC			
+               // запись CRC         
                sd_write_crc :
                         begin
                            sdcard_mosi <= 1'b0 ; 
@@ -385,7 +385,7 @@ module sdspi (
                               counter <= 8 ; 
                            end 
                         end
-					// чтение результат записи DR			
+               // чтение результат записи DR         
                sd_read_dr :
                         begin
                            sd_dr <= {sd_dr[6:0], sdcard_miso} ; 
@@ -393,7 +393,7 @@ module sdspi (
                            counter <= counter - 1'b1 ; 
                            if (counter == 0) sd_state <= sd_waitwritedone ; 
                         end
-					// проверка DR и завершение записи			
+               // проверка DR и завершение записи         
                sd_waitwritedone :
                         begin
                            if (sd_dr[3:0] != 4'b0101) sd_state <= sd_error ; 
@@ -405,7 +405,7 @@ module sdspi (
                               sd_nextstate <= sd_idle ; 
                            end 
                         end
-					// ожидание начала потока данных			
+               // ожидание начала потока данных         
                sd_read_data_waitstart :
                         begin
                            if (sd_r1 == 7'b0000000) begin
@@ -528,7 +528,7 @@ module sdspi (
                            if (counter != 0) counter <= counter - 1'b1 ; 
                            else    sd_state <= sd_nextstate ; 
                         end
-					// обработка ошибочных состояний			 
+               // обработка ошибочных состояний          
                sd_error :
                         begin
                            card_error <= 1'b1 ; 
