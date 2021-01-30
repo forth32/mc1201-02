@@ -33,6 +33,7 @@ module rk11 (
    input                  sdcard_miso, 
    output reg             sdreq,
    input                  sdack,
+	input                  sdmode,     // режим SDSPI
    
 // тактирование SD-карты
    input                  sdclock,   
@@ -219,7 +220,7 @@ module rk11 (
       .sdcard_xfer_in(sdcard_xfer_in),             // слово, записываемое в буфер записи
       .sdcard_xfer_write(sdcard_xfer_write),       // строб записи буфера
 		
-		.mode(1'b1), 											// режим ведущего контроллера
+		.mode(sdmode),                               // режим ведущего-ведомого контроллера
       .controller_clk(wb_clk_i),                   // синхросигнал общей шины
       .reset(reset),                               // сброс
       .sdclk(sdclock)                              // синхросигнал SD-карты

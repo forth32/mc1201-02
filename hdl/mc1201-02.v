@@ -4,6 +4,7 @@
 //================================================================================
 //
 `include "config.v"
+
 //***********************************
 //*        Головной модуль          *
 //***********************************
@@ -708,6 +709,7 @@ rk11 rkdisk (
    .sdclock(sdclock),
    .sdreq(rk_sdreq),
    .sdack(rk_sdack),
+	.sdmode(`RK_sdmode),           // режим ведущего-ведомого
    
 // Адрес массива дисков на карте
    .start_offset({6'b000000,diskbank,18'h0}),
@@ -756,6 +758,7 @@ dw hdd(
    .sdclock(sdclock),
    .sdreq(dw_sdreq),
    .sdack(dw_sdack),
+	.sdmode(`DW_sdmode),          
 
 // Адрес массива дисков на карте
    .start_offset({6'b000000,diskbank,18'hc000}),
@@ -802,6 +805,7 @@ rx01 dxdisk (
    .sdcard_miso(sdcard_miso), 
 
 
+	.sdmode(`DX_sdmode),          
    .sdreq(dx_sdreq),
    .sdack(dx_sdack),
    .sdclock(sdclock),
@@ -874,6 +878,7 @@ fdd_my mydisk (
    .sdclock(sdclock),
    .sdreq(my_sdreq),
    .sdack(my_sdack),
+	.sdmode(`MY_sdmode),          
    
 // Адрес массива дисков на карте
    .start_offset({6'b000000,diskbank,18'h2e000}),
@@ -922,13 +927,15 @@ assign sdcard_mosi =
          dw_sdack? dw_mosi: // DW
          dx_sdack? dx_mosi: // DX
          my_sdack? my_mosi: // MY
-                   rk_mosi; // RK по умолчанию
+         rk_sdack? rk_mosi: // RK
+                   `def_mosi; // * RK по умолчанию
 
 assign sdcard_cs =
          dw_sdack? dw_cs:   // DW
          dx_sdack? dx_cs:   // DX
          my_sdack? my_cs:   // MY
-                   rk_cs;   // RK по умолчанию
+         rk_sdack? rk_cs:   // RK
+                   `def_cs;   // * RK по умолчанию
    
 //**********************************
 //*  Контроллер прерываний
