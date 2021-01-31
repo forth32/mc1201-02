@@ -941,14 +941,14 @@ assign sdcard_mosi =
          dx_sdack? dx_mosi: // DX
          my_sdack? my_mosi: // MY
          rk_sdack? rk_mosi: // RK
-                   `def_mosi; // * RK по умолчанию
+                   `def_mosi; // по умолчанию - контроллер с ведущим SDSPI
 
 assign sdcard_cs =
          dw_sdack? dw_cs:   // DW
          dx_sdack? dx_cs:   // DX
          my_sdack? my_cs:   // MY
          rk_sdack? rk_cs:   // RK
-                   `def_cs;   // * RK по умолчанию
+                   `def_cs;   // по умолчанию - контроллер с ведущим SDSPI
    
 //**********************************
 //*  Контроллер прерываний
@@ -1084,8 +1084,10 @@ always @ (posedge i50Hz) begin
   tbshift[1] <= tbshift[0];
   // регистр заполнен - кнопка стабильно нажата
   if (&tbshift == 1'b1) begin
-      if (tbevent == 1'b0) timer_on <= ~timer_on;  // переключаем состояние таймера
-      tbevent <= 1'b1;                              // запрещаем дальнейшие изменения состояния таймиера
+      if (tbevent == 1'b0) begin
+        timer_on <= ~timer_on;  // переключаем состояние таймера
+        tbevent <= 1'b1;                              // запрещаем дальнейшие изменения состояния таймиера
+      end
   end
   // регистр очищен - кнопка стабильно отпущена
   else if (|tbshift == 1'b0) tbevent <= 1'b0;     // разрешаем изменения состояния таймера

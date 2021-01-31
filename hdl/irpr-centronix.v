@@ -169,7 +169,7 @@ always @(posedge wb_clk_i or posedge wb_rst_i)
      end  
 
      // Запись регистра данных
-     if ((drq == 1) & (dat_wstb == 1) & (busy == 0) & (err_n == 1)) begin // если контроллер и принтер готовы к приему данных
+     if ((drq == 1'b1) & (dat_wstb == 1'b1) & (busy == 1'b0) & (err_n == 1'b1)) begin // если контроллер и принтер готовы к приему данных
          drq <= 1'b0;        // снимаем DRQ
          lp_data <= wb_dat_i[7:0];  // выставляем данные 
          done <= 1'b0;       // снимаем признак done   

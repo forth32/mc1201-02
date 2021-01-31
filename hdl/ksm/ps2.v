@@ -18,7 +18,7 @@ module ps2 (
 
 // обработка прерывания   
    output reg            irq,         // запрос
-   input                  iack,       // подтверждение
+   input                 iack,        // подтверждение
 
 // клавиатура
    input                ps2_clk,     // линия PS/2 clock

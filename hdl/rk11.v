@@ -31,8 +31,8 @@ module rk11 (
    output                 sdcard_mosi, 
    output                 sdcard_sclk, 
    input                  sdcard_miso, 
-   output reg             sdreq,
-   input                  sdack,
+   output reg             sdreq,      // запрос доступа к карте
+   input                  sdack,      // подтверждение доступа к карте
    input                  sdmode,     // режим SDSPI
    
 // тактирование SD-карты
@@ -117,17 +117,13 @@ module rk11 (
    reg[3:0] rkda_sc; 
    wire[15:0] rkda;
    
-   // rk11 registers - rkdb - 177416
+   // регистр данных - rkdb - 177416
    reg[15:0] rkdb; 
 
-   // others
-   reg start; 
-   reg update_rkwc; 
-   reg[15:0] wcp; // счетчик читаемых слов, положительный (не инверсия)
-   wire[16:0] hs_offset; 
-   wire[16:0] ca_offset; 
-   wire[16:0] dn_offset;
-   reg[15:1] ram_phys_addr; 
+   reg start;            // флаг запуска команды
+   reg update_rkwc;      // признак обновления счетчика слов
+   reg[15:0] wcp;        // счетчик читаемых слов, положительный (не инверсия)
+   reg[15:1] ram_phys_addr;  // адрес для DMA-обмена
    reg[11:0] rkclock; 
    reg[1:0] rksi[7:0]; 
    reg scpset; 
@@ -137,13 +133,10 @@ module rk11 (
    reg[15:0] wrkdb; 
    reg [5:0] reply_count;   // таймер ожидания ответа при DMA-обмене
       
-   // Интерфейс с контроллеру SD
-   wire sdcard_xfer_clk; 
-//   reg sdcard_xfer_read; 
-
    // регистры контроллера DMA
-   reg nxm; 
+   reg nxm;                    // признак таймаута шины
    reg[8:0] sector_data_index; // указатель текущего слова в секторном буфере
+   // машина состояний контроллера
    parameter[3:0] busmaster_idle = 0; 
    parameter[3:0] busmaster_read = 1; 
    parameter[3:0] busmaster_readh = 2; 
@@ -466,7 +459,7 @@ module rk11 (
                   start <= 1'b1 ; 
                   rkdelay <= 120 ; // задержка запуска команды
                   rkcs_scp <= 1'b0 ; 
-                  rkds_dri <= 3'b000 ; // drive ident of interrupting drive
+                  rkds_dri <= 3'b000 ; // номер устройства, запросившего прерывание
             end 
          
             // запуск команды
@@ -542,7 +535,7 @@ module rk11 (
                                     write_start <= 1'b0 ;              // снимаем строб записи
                                     if (nxm == 1'b0 & sdcard_error == 1'b0)  begin
                                        // запись окончилась без ошибок
-                                       rkcs_mex <= 2'b00; //ram_phys_addr[17:16] ;  // адрес окончания записи - старшая часть 
+                                       rkcs_mex <= 2'b00; //ram_phys_addr[17:16] ;  // адрес окончания записи - старшая часть, пока, увы, не нужна
                                        rkba <= {ram_phys_addr[15:1], 1'b0} ;  // младшая часть
                                        // сектор меньше 11 - дорожку не меняем.
                                        if ((rkda_sc[3:0]) < (4'b1011))  rkda_sc[3:0] <= rkda_sc[3:0] + 1'b1 ; // прсто увеличиваем # сектора 
@@ -569,8 +562,8 @@ module rk11 (
                                         
                                        // переход к записи следующего сектора
                                        if ((wcp) > (16'b0000000100000000))  begin
-                                          // check if we need to do another sector, and setup for the next round if so
-                                          wcp <= (wcp) - (16'b0000000100000000) ; // начинаем запись полного сектора
+                                          // осталось записать больше одного полного сектора
+                                          wcp <= (wcp) - (16'b0000000100000000) ; // уменьшаем счетчик на размер полного сектора
                                        end
                                        else begin
                                           // запись завершена
@@ -728,9 +721,8 @@ module rk11 (
                                     rkda_sc[3:0] <= 4'b0000 ; 
                                     if (rkda_hd == 1'b0)   rkda_hd <= 1'b1 ; 
                                     else  begin
-                                       // read check
+                                       // read check 
                                        if ((rkda_cy) == (8'b11001010) & rkcs_fmt != 1'b1 & (wcp) > (16'b0000000100000000)) begin
-                                          //
                                           rker_ovr <= 1'b1 ; 
                                           rkcs_rdy <= 1'b1 ; 
                                           start <= 1'b0 ; 
@@ -772,7 +764,7 @@ module rk11 (
                            end
                   default :
                            begin
-                              // catchall
+                              // ошибочные состояния машины
                               rkcs_rdy <= 1'b1 ; 
                               start <= 1'b0 ; 
                            end
@@ -862,6 +854,9 @@ module rk11 (
    //**********************************************
    // Вычисление адреса блока на SD-карте
    //**********************************************
+   wire[16:0] hs_offset; 
+   wire[16:0] ca_offset; 
+   wire[16:0] dn_offset;
    // 
    // Головка
    assign hs_offset = (rkda_hd == 1'b1) ? 17'b00000000000001100 : 17'b00000000000000000 ;
@@ -925,7 +920,7 @@ module rk11 (
                            end 
                         end
                         
-                        // чтение заголовоко секторов
+                        // чтение заголовоков секторов
                busmaster_readh : 
                         begin
                            dma_adr_o <= {ram_phys_addr[15:1], 1'b0} ; 
@@ -938,7 +933,7 @@ module rk11 (
                busmaster_readh2 :
                         begin
                            dma_adr_o <= {ram_phys_addr[15:1], 1'b0} ; 
-                           dma_dat_o <= 16'h1111 ; // FIXME, what is the header format?
+                           dma_dat_o <= 16'h1111 ; 
                            dma_stb_o <= 1'b1 ; 
                            dma_we_o <= 1'b1;
                            if (rkcs_iba == 1'b0)     ram_phys_addr <= ram_phys_addr + 1'b1 ; 
@@ -1000,7 +995,7 @@ module rk11 (
                               sector_data_index <= sector_data_index - 1'b1 ; // уменьшаем счетчик записанных данных
                               sdcard_xfer_write <= 1'b1 ;         // поднимаем флаг режима записи sdspi
                               dma_we_o <= 1'b0 ; 
-                              sdcard_xfer_addr <= sdcard_xfer_addr + 1'b1 ; // адрес ьуфера sdspi++
+                              sdcard_xfer_addr <= sdcard_xfer_addr + 1'b1 ; // адрес буфера sdspi++
                               dma_stb_o <= 1'b1 ;  // поднимаем строб чтения
                               if (rkcs_iba == 1'b0)  ram_phys_addr <= ram_phys_addr + 1'b1 ; // если разрешено, увеличиваем адрес
                               dma_adr_o <= {ram_phys_addr[15:1], 1'b0} ; // выставляем на шину адрес
@@ -1020,7 +1015,6 @@ module rk11 (
                            end  
                              if (dma_ack_i == 1'b1) begin   // устройство подтвердило обмен
                                  sdcard_xfer_in <= dma_dat_i ; // передаем байт данные с шины на вход sdspi
-//                                 if (rkcs_iba == 1'b0)  ram_phys_addr <= ram_phys_addr + 1'b1 ; // если разрешено, увеличиваем адрес
                                  dma_adr_o <= {ram_phys_addr[15:1], 1'b0} ; // выставляем на шину адрес
                                  dma_stb_o <= 1'b0 ; 
                               if (sector_data_index == 9'b000000000) begin
