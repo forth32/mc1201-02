@@ -196,6 +196,8 @@ parameter [4:0] DMA_BUF2SD_NEXT = 18;
 parameter [4:0] DMA_BUF2SD_COMPLETE = 19;
 parameter [4:0] DMA_ALLTRK = 20;
 parameter [4:0] DMA_BOOTPARM = 21;
+parameter [4:0] DMA_ZEROBUF = 22;
+
 // Таймер ожидания ответа шины
 reg [7:0] dma_timer;
 
@@ -709,11 +711,21 @@ always @(posedge wb_clk_i)
             dma_we_o <= 1'b0;   // снимаем флаг записи на шину
             sdbuf_we <= 1'b1;   // включаем режим записи буфера
             dma_adr_o <= {ioadr[15:1],1'b0};  // начальный адрес хост-буфера
-            dma_state <= DMA_HOST2BUF;
             dma_timer <= 8'd200;  // взводим таймер ожидания ответа
+            dma_state <= DMA_ZEROBUF;
          end
        end   
-         
+       
+       // очистка буфер sdspi
+       DMA_ZEROBUF: begin
+            sdbuf_datain <= 16'O0;
+            if (&sdbuf_addr != 1'b1) sdbuf_addr <= sdbuf_addr + 1'b1;
+            else begin
+               dma_state <= DMA_HOST2BUF;
+               sdbuf_addr <= 8'o0;
+            end
+         end   
+
       // передача одного слова через DMA из хост-памяти в буфер
       DMA_HOST2BUF: begin
          dma_stb_o <= 1'b1;   // поднимаем строб транзакции
