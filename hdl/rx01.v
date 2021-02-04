@@ -274,9 +274,9 @@ always @(posedge wb_clk_i)   begin
                                       end      
                               // чтение регистра ошибок 
                               3'b111: begin
-                                       wb_dat_o=16'o0;
+                                       wb_dat_o<=16'o0;
                                       end       
-                              default: wb_dat_o=16'o0;
+                              default: wb_dat_o<=16'o0;
                              endcase
                endcase 
 
