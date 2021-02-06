@@ -981,13 +981,13 @@ always @(posedge wb_clk)
 //*******************************************************************
 //*  Коммутатор источника управления (мастера) шины wishbone
 //*******************************************************************
-assign wb_adr = (rk11_dma_state == 1'b1) ? rk11_adr :
-                (my_dma_state == 1'b1)   ? my_adr   :
-                                           cpu_adr; 
+assign wb_adr =   (rk11_dma_state) ? rk11_adr : 16'o0
+                | (my_dma_state)   ? my_adr   : 16'o0
+                | (cpu_access_req) ? cpu_adr  : 16'o0;
                                            
-assign wb_out = (rk11_dma_state == 1'b1) ? rk11_dma_out:
-                (my_dma_state == 1'b1)   ? my_dma_out:
-                                           cpu_data_out;
+assign wb_out =   (rk11_dma_state) ? rk11_dma_out: 16'o0
+                | (my_dma_state)   ? my_dma_out  : 16'o0
+                | (cpu_access_req) ? cpu_data_out: 16'o0;
                                            
 assign wb_cyc = (rk11_dma_state == 1'b1) ? rk11_dma_req:
                 (my_dma_state == 1'b1)   ? my_dma_req:
@@ -997,9 +997,9 @@ assign wb_we =  (rk11_dma_state == 1'b1) ? rk11_dma_we:
                 (my_dma_state == 1'b1)   ? my_dma_we:
                                            cpu_we;
                                            
-assign wb_sel = (rk11_dma_state == 1'b1) ? 2'b11:               
-                (my_dma_state == 1'b1)   ? 2'b11:
-                                          cpu_bsel;
+assign wb_sel =   (rk11_dma_state) ? 2'b11: 2'b00              
+                | (my_dma_state)   ? 2'b11: 2'b00              
+                | (cpu_access_req) ? cpu_bsel: 2'b00;
                                           
 assign wb_stb = (rk11_dma_state == 1'b1) ? rk11_dma_stb:
                 (my_dma_state == 1'b1)   ? my_dma_stb:
