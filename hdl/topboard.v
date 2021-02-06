@@ -72,9 +72,6 @@ module topboard (
 
 wire [2:0] vspeed;   // индекс скорости порта
 
-// Стартовый регистр
-wire [15:0] startup_reg = 16'o140001;
-
 wire        sys_clk_p;                 
 wire        sys_clk_n;                 
 wire        sys_init;                  // общий сброс
@@ -328,7 +325,6 @@ mc1201_02 cpu(
    .istb(vm_istb),                 // Строб приема вектора прерывания
    .iack(vm_iack),                 // Подтверждение приема вектора прерывания
 	
-   .una(vm_una),                   // Строб безадресного чтения
 	.timer_50(timer_50),            // Сигнал таймерного прерывания 50 Гц
 	.timer_button(timer_switch),    // кнопка включения-отключения таймера
 	.timer_status(timer_on)         // линия индикатора состояния таймера
@@ -943,8 +939,8 @@ wbc_vic #(.N(9)) vic
    .wb_dat_o(vm_ivec),
    .wb_stb_i(vm_istb),
    .wb_ack_o(vm_iack),
-   .wb_una_i(vm_una),
-   .rsel(startup_reg),    // содержимое регистра безадресного чтения
+   .wb_una_i(1'b0),
+   .rsel(16'o0),    // содержимое регистра безадресного чтения
 //         UART1-Tx     UART1-Rx   UART2-Tx    UART2-Rx     RK-11D        IRPR           DW         RX-11         MY  
    .ivec({16'o000064, 16'o000060, 16'o000334,  16'o000330, 16'o000220,  16'o000330, 16'o000300, 16'o000264, 16'o000170 }),   // векторы
    .ireq({irpstx_irq, irpsrx_irq, irpstx2_irq, irpsrx2_irq, rk11_irq,     lpt_irq,    dw_irq,     rx_irq,      my_irq  }),   // запрос прерывания

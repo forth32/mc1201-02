@@ -35,20 +35,38 @@ module mc1201_02 (
    output istb,                // Строб приема вектора прерывания
    input  iack,                // Подтверждение приема вектора прерывания
 
-   output una,                 // Строб безадресного чтения
 	input  timer_50,            // Сигнал таймерного прерывания 50 Гц
 	input  timer_button,        // кнопка включения-отключения таймера
 	output reg timer_status     // линия индикатора состояния таймера
 );
 
+
+// Стартовый регистр
+wire [15:0] startup_reg = 16'o140001;
+
 wire cpu_ack;
 wire [15:0] local_dat_i;
 wire [16:0] full_adr;
 wire local_cyc;
-
+wire una;
+wire [15:0] vector;
 assign cpu_cyc_o=local_cyc & (~full_adr[16]);
 
 assign cpu_adr_o=full_adr[15:0];
+assign vector=(una)? startup_reg : ivec ;
+
+reg una_iack;
+reg una_irq;
+always @ (posedge clk_p) begin
+  if (vm_init == 1'b1) begin
+		una_iack <= 1'b0;
+		una_irq <= 1'b0;
+  end		
+  else  begin
+    una_iack <= istb & una & ~una_iack;
+    una_irq <= una;
+  end 
+end
 
 //*************************************
 //*  Процессор К1801ВМ2
@@ -88,14 +106,13 @@ vm2_wb #(.VM2_CORE_FIX_PREFETCH(0)) cpu
    .vm_dclo(dclo),                  // Вход сброса процессора
    .vm_aclo(aclo),                  // Сигнал аварии питания
    .vm_halt(halt),                  // Прерывание входа в пультовоый режим
-   .vm_evnt(timer_50&timer_status),    // Прерывание от таймера 
-   .vm_virq(virq),                  // Векторное прерывание
+   .vm_evnt(timer_50&timer_status), // Прерывание от таймера 
+   .vm_virq(virq|una_irq),          // Векторное прерывание
 
 // Шины обработки прерываний                                       
-   .wbi_dat_i(ivec),                // Шина приема вектора прерывания
+   .wbi_dat_i(vector),              // Шина приема вектора прерывания
    .wbi_stb_o(istb),                // Строб приема вектора прерывания
-   .wbi_ack_i(iack),                // Подтверждение приема вектора прерывания
-
+   .wbi_ack_i(iack|una_iack),       // Подтверждение приема вектора прерывания
    .wbi_una_o(una)                  // Строб безадресного чтения
 );
 
