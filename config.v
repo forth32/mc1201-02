@@ -3,7 +3,8 @@
 //
 
 // Тип процессорной платы
-`define BOARD mc1201_02
+`define BOARD mc1260
+//`define BOARD mc1201_02
 //`define BOARD mc1201_01
 
 //
