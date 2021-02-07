@@ -328,6 +328,7 @@ set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ps2_clk
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to ps2_data
 set_global_assignment -name VERILOG_FILE hdl/topboard.v
 set_global_assignment -name VERILOG_FILE config.v
+set_global_assignment -name VERILOG_FILE "hdl/mc1201-01.v"
 set_global_assignment -name VERILOG_FILE "hdl/mc1201-02.v"
 set_global_assignment -name VERILOG_FILE "hdl/kgd-graphics.v"
 set_global_assignment -name VERILOG_FILE hdl/ksm/vtreset.v
@@ -346,8 +347,12 @@ set_global_assignment -name VERILOG_FILE "hdl/irpr-centronix.v"
 set_global_assignment -name VERILOG_FILE hdl/wbc_vic.v
 set_global_assignment -name VERILOG_FILE hdl/wbc_uart.v
 set_global_assignment -name VERILOG_FILE hdl/wbc_rst.v
-set_global_assignment -name VERILOG_FILE hdl/vm2_wb.v
-set_global_assignment -name VERILOG_FILE hdl/vm2_plm.v
+set_global_assignment -name VERILOG_FILE hdl/vm1/vm1_wb.v
+set_global_assignment -name VERILOG_FILE hdl/vm1/vm1_tve.v
+set_global_assignment -name VERILOG_FILE hdl/vm1/vm1_reg.v
+set_global_assignment -name VERILOG_FILE hdl/vm1/vm1_plm.v
+set_global_assignment -name VERILOG_FILE hdl/vm2/vm2_wb.v
+set_global_assignment -name VERILOG_FILE hdl/vm2/vm2_plm.v
 set_global_assignment -name VERILOG_FILE hdl/sdram_ip/sdram_wr_data.v
 set_global_assignment -name VERILOG_FILE hdl/sdram_ip/sdram_top.v
 set_global_assignment -name VERILOG_FILE hdl/sdram_ip/sdram_para.v
@@ -355,10 +360,11 @@ set_global_assignment -name VERILOG_FILE hdl/sdram_ip/sdram_ctrl.v
 set_global_assignment -name VERILOG_FILE hdl/sdram_ip/sdram_cmd.v
 set_global_assignment -name SDC_FILE mc1201.sdc
 set_global_assignment -name QIP_FILE "ip-components/vtmem.qip"
-set_global_assignment -name QIP_FILE "ip-components/rom055.qip"
 set_global_assignment -name QIP_FILE "ip-components/pll100.qip"
 set_global_assignment -name QIP_FILE "ip-components/kgdvram.qip"
 set_global_assignment -name QIP_FILE "ip-components/fontrom.qip"
+set_global_assignment -name QIP_FILE "ip-components/rom055.qip"
+set_global_assignment -name QIP_FILE "ip-components/rom000.qip"
 set_global_assignment -name SIGNALTAP_FILE output_files/stp1.stp
 set_global_assignment -name SLD_FILE db/stp1_auto_stripped.stp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
