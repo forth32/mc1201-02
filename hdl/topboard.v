@@ -349,7 +349,7 @@ wire dram_rd=(~wb_we) & ram_stb;
 // стробы подтверждения
 wire sdr_wr_ack,sdr_rd_ack;
 // тактовый сигнал на память
-assign DRAM_CLK=wb_clk;
+assign DRAM_CLK=~wb_clk;
 
 // Сигналы выбора старших-младших байтов
 reg dram_h,dram_l;
@@ -465,7 +465,7 @@ assign uart2_speed = baud2;
 //**********************************
 //*     ирпс1 (консоль)
 //**********************************
-wbc_uart uart
+wbc_uart #(.REFCLK(`uart_clkref)) uart1
 (
    .wb_clk_i(wb_clk),
    .wb_rst_i(sys_init),
@@ -497,7 +497,7 @@ wbc_uart uart
 //*     ирпс2
 //**********************************
 `ifdef IRPS2_module
-wbc_uart uart2
+wbc_uart #(.REFCLK(`uart_clkref)) uart2
 (
    .wb_clk_i(wb_clk),
    .wb_rst_i(sys_init),
