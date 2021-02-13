@@ -109,6 +109,7 @@ wire uart1_stb;
 wire uart2_stb;
 wire sysram_stb;
 wire ram_stb;
+wire rom_stb;
 wire rk11_stb;
 wire lpt_stb;
 wire dw_stb;
@@ -120,6 +121,7 @@ wire kgd_stb;
 wire uart1_ack;
 wire uart2_ack;
 wire ram_ack;
+wire rom_ack;
 wire rk11_ack;
 wire lpt_ack;
 wire dw_ack;
@@ -135,6 +137,7 @@ wire my_dma_ack;
 wire [15:0] uart1_dat;
 wire [15:0] uart2_dat;
 wire [15:0] ram_dat;
+wire [15:0] rom_dat;
 wire [15:0] rk11_dat;
 wire [15:0] lpt_dat;
 wire [15:0] dw_dat;
@@ -404,6 +407,28 @@ always @ (posedge wb_clk)  begin
    dack[0] <= ram_stb & (sdr_rd_ack | sdr_wr_ack);
    dack[1] <= ram_stb & dack[0];
 end
+
+//**********************************
+//* Пзу пользователя 140000-157777
+//**********************************
+`ifdef userrom
+reg rom_ack0;
+reg rom_ack1;
+
+user_rom rom(
+   .address(wb_adr[12:1]),
+   .clock(wb_clk),
+   .q(rom_dat)
+);
+// формирователь cигнала подверждения транзакции с задержкой на 1 такт
+always @ (posedge wb_clk)  begin
+   rom_ack0 <= wb_cyc & rom_stb;
+   rom_ack1 <= wb_cyc & rom_ack0;
+end
+assign rom_ack=rom_ack1;
+`else
+assign rom_ack=1'b0;
+`endif
 
 //**********************************
 // Выбор консольного порта
@@ -1008,16 +1033,24 @@ assign rx_stb     = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o177170 >> 2));   // 
 assign my_stb     = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o172140 >> 2));   // MY - 172140-172142 / 177130-177132
 assign kgd_stb    = wb_stb & wb_cyc & (wb_adr[15:3] == (16'o176640 >> 3));   // КГД - 176640-176646
 
+// ПЗУ пользователя
+`ifdef userrom
+assign rom_stb = wb_stb & wb_cyc & (wb_adr[15:13] == 3'b110);
+`else
+assign rom_stb=1'b0;
+`endif
+
 // Размещение основной памяти :  000000 - 160000 
 // + если требуется, добавляется служебная область памяти по сигналу sysram_stb процессорной платы
-assign ram_stb =  (wb_stb & wb_cyc & (wb_adr[15:13] != 3'b111)) | sysram_stb;
+assign ram_stb =  ((wb_stb & wb_cyc & (wb_adr[15:13] != 3'b111)) | sysram_stb) & ~rom_stb;
 
 // Сигналы подтверждения - собираются через OR со всех устройств
-assign global_ack  = ram_ack | uart1_ack | uart2_ack | rk11_ack | lpt_ack | dw_ack | rx_ack | my_ack | kgd_ack;
+assign global_ack  = ram_ack | rom_ack | uart1_ack | uart2_ack | rk11_ack | lpt_ack | dw_ack | rx_ack | my_ack | kgd_ack;
 
 // Мультиплексор выходных шин данных всех устройств
 assign wb_mux = 
        (ram_stb   ? ram_dat   : 16'o000000)
+     | (rom_stb   ? rom_dat   : 16'o000000)
      | (uart1_stb ? uart1_dat : 16'o000000)
      | (uart2_stb ? uart2_dat : 16'o000000)
      | (rk11_stb  ? rk11_dat  : 16'o000000)
