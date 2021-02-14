@@ -1040,9 +1040,15 @@ assign rom_stb = wb_stb & wb_cyc & (wb_adr[15:13] == 3'b110);
 assign rom_stb=1'b0;
 `endif
 
-// Размещение основной памяти :  000000 - 160000 
+// Размещение основной памяти : 
 // + если требуется, добавляется служебная область памяти по сигналу sysram_stb процессорной платы
-assign ram_stb =  ((wb_stb & wb_cyc & (wb_adr[15:13] != 3'b111)) | sysram_stb) & ~rom_stb;
+`ifdef userrom
+// вариант при наличии ПЗУ пользователя - RAM находится в пространстве 000000 - 137777 
+assign ram_stb =  (wb_stb & wb_cyc & (wb_adr[15:14] != 2'b11)) | sysram_stb;
+`else
+// вариант без ПЗУ - RAM находится в пространстве 000000 - 157777 
+assign ram_stb =  (wb_stb & wb_cyc & (wb_adr[15:13] != 3'b111)) | sysram_stb;
+`endif
 
 // Сигналы подтверждения - собираются через OR со всех устройств
 assign global_ack  = ram_ack | rom_ack | uart1_ack | uart2_ack | rk11_ack | lpt_ack | dw_ack | rx_ack | my_ack | kgd_ack;

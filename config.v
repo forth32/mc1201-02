@@ -37,13 +37,13 @@
 // Для включения ПЗУ в схему раскомментируйте строку, и укажите имя mif-файла, загружаемого в ПЗУ.
 // Размер загружаемого дампа не должен превышать 8Кб
 
-//`define userrom "rom/013-basic.mif"
+`define userrom "rom/013-basic.mif"
 //`define userrom "rom/058-focal.mif"
 
 //
 // Выбор файла шрифта
-`define fontrom_file "./ksm-firmware/font/font-main.mif"
-//`define fontrom_file "./ksm-firmware/font/font-ksm.mif"
+//`define fontrom_file "./ksm-firmware/font/font-main.mif"
+`define fontrom_file "./ksm-firmware/font/font-ksm.mif"
 
 //  Индексы скорости последовательного порта:
 //  0 - 1200
