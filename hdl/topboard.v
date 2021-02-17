@@ -544,7 +544,7 @@ wbc_uart #(.REFCLK(`uart_clkref)) uart2
    .cfg_podd(1'b0)
 );
 `else 
-assign uart2txd=1'b1;
+assign uart2_txd=1'b1;
 assign irpstx2_irq=1'b0;
 assign irpsrx2_irq=1'b0;
 `endif
