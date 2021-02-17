@@ -1,4 +1,4 @@
-## Generated SDC file "mc1201.sdc"
+## Generated SDC file "top.sdc"
 
 ## Copyright (C) 2018  Intel Corporation. All rights reserved.
 ## Your use of Intel Corporation's design tools, logic functions 
@@ -19,10 +19,10 @@
 ## PROGRAM "Quartus Prime"
 ## VERSION "Version 18.0.0 Build 614 04/24/2018 SJ Standard Edition"
 
-## DATE    "Sat Nov 28 21:14:47 2020"
+## DATE    "Wed Feb 17 19:48:53 2021"
 
 ##
-## DEVICE  "EP4CE10F17C8"
+## DEVICE  "EP4CE22F17C7"
 ##
 
 
@@ -44,10 +44,8 @@ create_clock -name {clk} -period 20.000 -waveform { 0.000 10.000 } [get_ports {c
 #**************************************************************
 # Create Generated Clock
 #**************************************************************
+create_generated_clock -name {mc1201_02:cpu|timer_50} -source [get_nets {cpu|corepll|altpll_component|auto_generated|wire_pll1_clk[0]}] -divide_by 2000000 -duty_cycle 0.0000005
 
-create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[0]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50.000 -multiply_by 2 -master_clock {clk} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[0]}] 
-create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[1]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50.000 -multiply_by 2 -phase 180.000 -master_clock {clk} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[1]}] 
-create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[2]} -source [get_pins {corepll|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50.000 -multiply_by 1 -divide_by 4 -master_clock {clk} [get_pins {corepll|altpll_component|auto_generated|pll1|clk[2]}] 
 
 
 #**************************************************************
@@ -56,5 +54,55 @@ create_generated_clock -name {corepll|altpll_component|auto_generated|pll1|clk[2
 
 
 
+#**************************************************************
+# Set Clock Uncertainty
+#**************************************************************
 
+
+
+#**************************************************************
+# Set Input Delay
+#**************************************************************
+
+
+
+#**************************************************************
+# Set Output Delay
+#**************************************************************
+
+
+
+#**************************************************************
+# Set Clock Groups
+#**************************************************************
+
+
+
+#**************************************************************
+# Set False Path
+#**************************************************************
+
+
+
+#**************************************************************
+# Set Multicycle Path
+#**************************************************************
+
+
+
+#**************************************************************
+# Set Maximum Delay
+#**************************************************************
+
+
+
+#**************************************************************
+# Set Minimum Delay
+#**************************************************************
+
+
+
+#**************************************************************
+# Set Input Transition
+#**************************************************************
 

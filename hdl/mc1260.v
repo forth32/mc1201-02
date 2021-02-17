@@ -67,12 +67,18 @@ pll100 corepll
 // счетчик замедления процессора
 //*************************************
 reg [4:0] cpudelay;
+reg cpu_clk_enable;
 
 always @ (posedge clk_p) begin
-    if (cpudelay != 5'd21) cpudelay <= cpudelay + 1'b1;  // считаем от 0 до 22
-    else cpudelay <= 5'd0;
+    if (cpudelay != 5'd21) begin
+	     cpudelay <= cpudelay + 1'b1;  // считаем от 0 до 22
+		  cpu_clk_enable <= 1'b0;
+	 end	  
+    else begin
+	     cpudelay <= 5'd0;
+		  cpu_clk_enable <= 1'b1;
+	 end	  
 end    
-wire cpu_clk_enable=~(|cpudelay);  // формирователь импульса с заполнением 1/21
 
 //*************************************
 //*  Процессор LSI-11 (M2)

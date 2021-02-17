@@ -126,12 +126,18 @@ pll100 corepll
 // счетчик замедления процессора
 //*************************************
 reg [4:0] cpudelay;
+reg cpu_clk_enable;
 
 always @ (posedge clk_p) begin
-    if (cpudelay != 5'd21) cpudelay <= cpudelay + 1'b1;  // считаем от 0 до 22
-    else cpudelay <= 5'd0;
+    if (cpudelay != 5'd21) begin
+	     cpudelay <= cpudelay + 1'b1;  // считаем от 0 до 22
+		  cpu_clk_enable <= 1'b0;
+	 end	  
+    else begin
+	     cpudelay <= 5'd0;
+		  cpu_clk_enable <= 1'b1;
+	 end	  
 end    
-wire cpu_clk_enable=~(|cpudelay);  // формирователь импульса с заполнением 1/21
 
 //*************************************
 //*  Процессор К1801ВМ2
@@ -195,7 +201,7 @@ end
 //* Генератор прерываний от таймера
 //**********************************
 reg timer_50;
-reg [21:0] timercnt;
+reg [20:0] timercnt;
 
 always @ (posedge clk_p) begin
   if (timercnt == 21'd1999999) begin
@@ -207,6 +213,7 @@ always @ (posedge clk_p) begin
 	  timer_50 <= 1'b0;
   end	  
 end
+
 
 //**********************************
 //* Сигнал разрешения таймера
@@ -223,8 +230,8 @@ always @ (posedge timer_50) begin
   // регистр заполнен - кнопка стабильно нажата
   if (&tbshift == 1'b1) begin
       if (tbevent == 1'b0) begin
-        timer_status <= ~timer_status;  // переключаем состояние таймера
-        tbevent <= 1'b1;                              // запрещаем дальнейшие изменения состояния таймиера
+        timer_status <= ~timer_status;            // переключаем состояние таймера
+        tbevent <= 1'b1;                          // запрещаем дальнейшие изменения состояния таймиера
       end
   end
   // регистр очищен - кнопка стабильно отпущена
