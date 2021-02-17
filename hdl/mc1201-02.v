@@ -63,7 +63,7 @@ module mc1201_02 (
    input  iack,                // Подтверждение приема вектора прерывания
 
 // Таймер
-	input  timer_50,            // Сигнал таймерного прерывания 50 Гц
+//	input  timer_50,            // Сигнал таймерного прерывания 50 Гц
 	input  timer_button,        // кнопка включения-отключения таймера
 	output reg timer_status     // линия индикатора состояния таймера
 );
@@ -184,10 +184,28 @@ rom055 hrom(
    .clock(clk_p),
    .q(rom_dat)
 );
+
 // формирователь cигнала подверждения транзакции с задержкой на 1 такт
 always @ (posedge clk_p) begin
-   rom_ack0 <= local_cyc & rom_stb;
-   rom_ack  <= local_cyc & rom_ack0;
+   rom_ack0 <= local_cyc & rom_stb & ~cpu_we_o;
+   rom_ack  <= local_cyc & rom_ack0 & ~cpu_we_o;
+end
+
+//**********************************
+//* Генератор прерываний от таймера
+//**********************************
+reg timer_50;
+reg [21:0] timercnt;
+
+always @ (posedge clk_p) begin
+  if (timercnt == 21'd1999999) begin
+     timercnt <= 21'd0;
+	  timer_50 <= 1'b1;
+  end  
+  else begin
+     timercnt <= timercnt + 1'b1;
+	  timer_50 <= 1'b0;
+  end	  
 end
 
 //**********************************

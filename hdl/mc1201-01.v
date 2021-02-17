@@ -55,7 +55,6 @@ module mc1201_01 (
    input  iack,                // Подтверждение приема вектора прерывания
 
 // Таймер
-	input  timer_50,            // Сигнал таймерного прерывания 50 Гц
 	input  timer_button,        // кнопка включения-отключения таймера
 	output reg timer_status     // линия индикатора состояния таймера
 );
@@ -230,6 +229,23 @@ always @(posedge clk_p) begin
 		if (vm_sel[1] & cpu_we_o) startup_reg[7:2] <= cpu_dat_o[7:2];  // запись регистра начального пуска
 
 	end
+end
+
+//**********************************
+//* Генератор прерываний от таймера
+//**********************************
+reg timer_50;
+reg [21:0] timercnt;
+
+always @ (posedge clk_p) begin
+  if (timercnt == 21'd1999999) begin
+     timercnt <= 21'd0;
+	  timer_50 <= 1'b1;
+  end  
+  else begin
+     timercnt <= timercnt + 1'b1;
+	  timer_50 <= 1'b0;
+  end	  
 end
 
 //**********************************

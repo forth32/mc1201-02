@@ -4,12 +4,10 @@
 module wbc_rst #(parameter
 
    OSCCLK=50000000,           // входяшая тактовая частота платы
-   REFCLK=100000000,          // тактовая частота процессора
    PWR_WIDTH=10,              // minimal Power Reset width in system ticks
    DCLO_WIDTH=15,             // длительность импльса DCLO
    ACLO_DELAY=7,              // задержка снятия ACLO после DCLO
-   DEBOUNCE=5,                // задержка для подавления дребезга кнопки сброса в миллисекундах
-   SYSTICK=20000              // Период системного таймерав микросекундах
+   DEBOUNCE=5                 // задержка для подавления дребезга кнопки сброса в миллисекундах
 )
 (
    input       osc_clk,       // входяшая тактовая частота платы
@@ -20,11 +18,8 @@ module wbc_rst #(parameter
                               //
    output reg  sys_dclo,      // DCLO output
    output reg  sys_aclo,      // ACLO output
-   output       global_reset,  // Выход сигнала сброса без учета sys_read, 1 - сброс, 0 - работа
-   output reg  sys_irq        // Сигнал прерывания с частотой 50Гц для таймера
+   output      global_reset   // Выход сигнала сброса без учета sys_read, 1 - сброс, 0 - работа
 );
-localparam US_COUNTER_WIDTH = log2(REFCLK/1000000);
-localparam ST_COUNTER_WIDTH = log2(SYSTICK);
 localparam DB_COUNTER_WIDTH = log2(DEBOUNCE);
 localparam OS_COUNTER_WIDTH = log2(OSCCLK/1000);
 
@@ -35,20 +30,17 @@ localparam AC_COUNTER_WIDTH = log2(ACLO_DELAY);
 reg   [DB_COUNTER_WIDTH-1:0] count_db;
 reg   [OS_COUNTER_WIDTH-1:0] count_os;
 
-reg   [US_COUNTER_WIDTH-1:0] count_us;
-reg   [ST_COUNTER_WIDTH-1:0] count_st;
 reg   [PW_COUNTER_WIDTH-1:0] count_pw;
 reg   [DC_COUNTER_WIDTH-1:0] count_dc;
 reg   [AC_COUNTER_WIDTH-1:0] count_ac;
 
-reg   ena_us;
 reg   osc_ms;
 reg   pll_reg;
 reg   but_reg;
 reg   key_down;
 
-reg  pwr_rst;       // power reset - сброс с задержкой PWR_WIDTH
-reg  sys_rst;       // system reset - сброс с ожиданием готовности 
+reg   pwr_rst;       // power reset - сброс с задержкой PWR_WIDTH
+reg   sys_rst;       // system reset - сброс с ожиданием готовности 
 
 
 reg   [1:0] key_syn;
@@ -170,55 +162,6 @@ begin
       end
    end
 end
-//______________________________________________________________________________
-//
-// Timer IRQ, and us/ms system clock enable strobes
-//
-always @(posedge sys_clk)
-begin
-   if (sys_rst)
-   begin
-      ena_us   <= 1'b0;
-      sys_irq  <= 1'b0;
-
-      count_us <= 0;
-      count_st <= 0;
-      end
-   else
-   begin
-      //
-      // One microsecond interval counter
-      //
-      if (count_us == ((REFCLK/1000000)-1)) begin
-         ena_us <= 1'b1;
-         count_us <= 0;
-      end
-      else begin
-         ena_us <= 1'b0;
-         count_us <= count_us + 1'b1;
-      end
-      //
-      // One millisecond interval counter
-      //
-      if (ena_us)  begin
-            
-         //
-         // System Timer interrupt
-         //
-         if (count_st == (SYSTICK-1))
-         begin
-            sys_irq <= 1'b0;
-            count_st <= 0;
-         end
-         else
-         begin
-            count_st <= count_st + 1'b1;
-            if (count_st == (SYSTICK/2-1))
-                  sys_irq <= 1'b1;
-         end
-      end
-   end
-end
 
 function integer log2(input integer value);
    begin
@@ -226,4 +169,5 @@ function integer log2(input integer value);
          value = value >> 1;
    end
 endfunction
+
 endmodule

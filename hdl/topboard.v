@@ -74,7 +74,6 @@ wire [2:0] vspeed;   // индекс скорости порта
 
 wire        sys_init;                  // общий сброс
 wire        sys_plock;                 // готовность PLL
-wire        timer_50;                  // выход интервального таймера
 wire        terminal_rst;
 
 // шина WISHBONE                                       
@@ -273,8 +272,7 @@ wbc_rst reset
    .sys_ready(dr_ready),        // вход готовности системных компонентов (влияет на sys_rst)
    .sys_dclo(vm_dclo_in),   
    .sys_aclo(vm_aclo_in),
-   .global_reset(global_reset), // выход кнопки сброса 
-   .sys_irq(timer_50)           // сигнал прерывания таймера с частотой 50 Гц.
+   .global_reset(global_reset)  // выход кнопки сброса 
 );
 
 //**********************************************************
@@ -314,7 +312,6 @@ wbc_rst reset
    .istb(vm_istb),                 // Строб приема вектора прерывания
    .iack(vm_iack),                 // Подтверждение приема вектора прерывания
 	
-	.timer_50(timer_50),            // Сигнал таймерного прерывания 50 Гц
 	.timer_button(timer_switch),    // кнопка включения-отключения таймера
 	.timer_status(timer_on)         // линия индикатора состояния таймера
 	
