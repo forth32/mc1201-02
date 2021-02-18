@@ -114,7 +114,7 @@ always @(posedge wb_clk_i or posedge wb_rst_i)
       ie    <= 1'b0;
       irq <= 1'b0;
       reset_delay <= 8'hff;
-      drq <= ~busy;            // начальное значение сигнала DRQ определяется готовностью принтера
+      drq <= 1'b0;             // начальное значение сигнала DRQ - 0
       done <= 1'b0;          
       lp_stb_n <= 1'b1;        // строб данных
       wb_dat_o <= 16'h0000;
