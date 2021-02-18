@@ -97,7 +97,7 @@ wire   rx_irq, rx_iack;
 wire   ps2_irq, ps2_iack;
 wire  irq50;                
 
-wire [12:0] cursor_adr;       // адрес курсора
+wire [10:0] cursor_adr;       // адрес курсора
 wire [15:0] vtcsr;            // регистр управления видеоконтроллером
 
 assign vspeed=vtcsr[10:8];    // индекс скорости - извлекаем из регистра управления

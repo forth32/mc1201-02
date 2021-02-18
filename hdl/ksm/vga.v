@@ -20,7 +20,7 @@ module vga (
    output reg             vgag,       // видеовыход зеленый
    output reg             vgab,       // видеовыход синий
    // управление     
-   input [12:0]           cursor,     // адрес курсора
+   input [10:0]           cursor,     // адрес курсора
    input                  cursor_on,  // 0 - курсор невидим, 1 - отображается
    input                  cursor_type,// форма курсора, 0 - подчеркивание, 1 - блок
    input                  flash,      // импульсы переключения видимости мерцающих символов
@@ -37,8 +37,8 @@ wire pixel;  // выход данных шрифтовой памяти
 
 
 // двухпортовый видеобуфер
-reg[7:0] vram_even[1024:0];         // четные байты
-reg[7:0] vram_odd[1024:0];          // нечетные байты
+reg[7:0] vram_even[1023:0];         // четные байты
+reg[7:0] vram_odd[1023:0];          // нечетные байты
    
 //************************************
 //* ROM знакогенератора с шрифтами 
@@ -71,15 +71,15 @@ always @(posedge wb_clk_i or posedge wb_rst_i)
 always @(posedge wb_clk_i)  begin
    // Чтение данных из видеопамяти
    if (bus_read_req == 1'b1) begin
-        wb_dat_o[7:0] <= vram_even[wb_adr_i[11:1]] ; 
-        wb_dat_o[15:8] <= vram_odd[wb_adr_i[11:1]] ;
+        wb_dat_o[7:0] <= vram_even[wb_adr_i[10:1]] ; 
+        wb_dat_o[15:8] <= vram_odd[wb_adr_i[10:1]] ;
    end
    // запись данных в видеопамять   
    else if (bus_write_req == 1'b1)  begin
          // запись четных байтов 
-         if (wb_sel_i[0] == 1'b1) vram_even[wb_adr_i[11:1]] <= wb_dat_i[7:0] ; 
+         if (wb_sel_i[0] == 1'b1) vram_even[wb_adr_i[10:1]] <= wb_dat_i[7:0] ; 
          // запись нечетных байтов
-         if (wb_sel_i[1] == 1'b1) vram_odd[wb_adr_i[11:1]] <= wb_dat_i[15:8] ; 
+         if (wb_sel_i[1] == 1'b1) vram_odd[wb_adr_i[10:1]] <= wb_dat_i[15:8] ; 
    end  
 end 
 
@@ -90,8 +90,8 @@ end
 
 reg[3:0]  fontcol;         // столбец шрифта
 reg[4:0]  fontrow;         // строка шрифта
-reg[12:0] char_adr;        // адрес текущего знакоместа в видеопамяти
-reg[12:0] row_start_adr;   // адрес начала текущей строки в виедопамяти
+reg[10:0] char_adr;        // адрес текущего знакоместа в видеопамяти
+reg[10:0] row_start_adr;   // адрес начала текущей строки в виедопамяти
 
 reg[1:0]  cursor_match;    // флаг наличия курсора в текущей позиции
 
@@ -113,7 +113,7 @@ always @(posedge clk50)
     // сброс контроллера
     col <= 11'o0;
     row <= 10'o0;
-    row_start_adr <= 13'o0; 
+    row_start_adr <= 11'o0; 
     fontrow <= 5'o0 ; 
   end
   else begin
@@ -129,7 +129,7 @@ always @(posedge clk50)
     if (row == 10'd627) begin
       // переход на новый кадр
       row <= 10'd0;
-      row_start_adr <= 13'o0; 
+      row_start_adr <= 11'o0; 
       fontrow <= 5'o0 ; 
     end   
     else begin
@@ -208,8 +208,8 @@ always @(posedge clk50)
             //***************************************************
             // выборка четного и нечетного байта из видеопамяти
             //***************************************************
-            char_evn <= vram_even[char_adr[12:1]] ; // четный теущий символ
-            char_odd <= vram_odd[char_adr[12:1]] ; // нечетный текущий символ
+            char_evn <= vram_even[char_adr[10:1]] ; // четный теущий символ
+            char_odd <= vram_odd[char_adr[10:1]] ; // нечетный текущий символ
             vram_a0 <= char_adr[0];  // селектор четного-нечетного байта
             char_adr <= char_adr + 1'b1; // переход на новый символ
             fontcol <= fontcol + 1'b1;   // переход на следующую колонку знакоместа
@@ -224,9 +224,9 @@ always @(posedge clk50)
          end   
          
          // Селектор цветов выводимого видеосигнала
-         vgab <= ((char_adr> 13'd70) && (char_adr < 13'd80) && vblank)  ? vout:1'b0;   // синий - только часы
-         vgar <= (((row_start_adr == 13'b0) || ((|cursor_match) && cursor_field)) && vblank)? vout:1'b0;  // красный - служебная строка и курсор 
-         vgag <= ((row_start_adr > 13'd79) && vblank) ? vout:1'b0;                     // зеленый - все строки начиная с 1
+         vgab <= ((char_adr> 11'd70) && (char_adr < 11'd80) && vblank)  ? vout:1'b0;   // синий - только часы
+         vgar <= (((row_start_adr == 11'b0) || ((|cursor_match) && cursor_field)) && vblank)? vout:1'b0;  // красный - служебная строка и курсор 
+         vgag <= ((row_start_adr > 11'd79) && vblank) ? vout:1'b0;                     // зеленый - все строки начиная с 1
   end
 
   //******************************************

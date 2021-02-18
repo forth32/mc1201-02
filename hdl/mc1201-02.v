@@ -90,7 +90,7 @@ assign sysram_stb = cpu_stb_o & local_cyc & (full_adr[16:13] == 4'b1111);
 assign cpu_ack = global_ack | rom_ack;
 
 // мультиплексор входной шины данных - подключается к общей шине или к ROM
-assign local_dat_i = (rom_stb   ? rom_dat   : cpu_dat_i);
+assign local_dat_i = (rom_stb   ? rom_dat   : 16'o0) | cpu_dat_i;
 
 // В оригинальном процессоре сигнал adr[16] называется SEL и управляет картой памяти. 
 // Признак активной транзакции на общей шине - если адрес [16]==0. 
@@ -193,8 +193,8 @@ rom055 hrom(
 
 // формирователь cигнала подверждения транзакции с задержкой на 1 такт
 always @ (posedge clk_p) begin
-   rom_ack0 <= local_cyc & rom_stb & ~cpu_we_o;
-   rom_ack  <= local_cyc & rom_ack0 & ~cpu_we_o;
+   rom_ack0 <= local_cyc & rom_stb;// & ~cpu_we_o;
+   rom_ack  <= local_cyc & rom_ack1;// & ~cpu_we_o;
 end
 
 //*************************************************************************
