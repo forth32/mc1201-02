@@ -284,12 +284,12 @@ wbc_rst reset
    .busclk(wb_clk),                // Основной синхросигнал общей шины
    .sdclk(sdclock),                // Синхросигнал SD-карты
    .cpuslow(cpuslow),              // Режим замедления процессора
-	.clkrdy(sys_plock),             // Готовность PLL
+   .clkrdy(sys_plock),             // Готовность PLL
 
 // Шина Wishbone                                       
    .cpu_gnt_i(cpu_access_req),     // 1 - разрешение cpu работать с шиной
                                    // 0 - DMA с внешними устройствами, cpu отключен от шины и бесконечно ждет ответа  ack
-	.cpu_adr_o(cpu_adr),            // выход шины адреса
+   .cpu_adr_o(cpu_adr),            // выход шины адреса
    .cpu_dat_o(cpu_data_out),       // выход шины данных
    .cpu_dat_i(wb_mux),             // вход шины данных
    .cpu_cyc_o(cpu_cyc),            // Строб цила wishbone
@@ -311,10 +311,10 @@ wbc_rst reset
    .ivec(vm_ivec),                 // Шина приема вектора прерывания
    .istb(vm_istb),                 // Строб приема вектора прерывания
    .iack(vm_iack),                 // Подтверждение приема вектора прерывания
-	
-	.timer_button(timer_switch),    // кнопка включения-отключения таймера
-	.timer_status(timer_on)         // линия индикатора состояния таймера
-	
+   
+   .timer_button(timer_switch),    // кнопка включения-отключения таймера
+   .timer_status(timer_on)         // линия индикатора состояния таймера
+   
 );
 
 //**********************************

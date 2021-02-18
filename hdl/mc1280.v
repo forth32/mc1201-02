@@ -10,7 +10,7 @@ module mc1280 (
    input  clk50,               // входная тактовая частота платы - 50 МГц
    output busclk,              // Основной синхросигнал общей шины
    output sdclk,               // Синхросигнал SD-карты
-	output clkrdy,              // сигнал готовности тактового генератора
+   output clkrdy,              // сигнал готовности тактового генератора
    input  cpuslow,             // Режим замедления процессора
 
 // Шина Wishbone                                       
@@ -40,8 +40,8 @@ module mc1280 (
    input  iack,                // Подтверждение приема вектора прерывания
 
 // Таймер
-	input  timer_button,        // кнопка включения-отключения таймера
-	output reg timer_status     // линия индикатора состояния таймера
+   input  timer_button,        // кнопка включения-отключения таймера
+   output reg timer_status     // линия индикатора состояния таймера
 );
 
 // синхросигналы 
@@ -124,12 +124,12 @@ reg [20:0] timercnt;
 always @ (posedge clk_p) begin
   if (timercnt == 20'd999999) begin
      timercnt <= 20'd0;
-	  timer_50 <= 1'b1;
+     timer_50 <= 1'b1;
   end  
   else begin
      timercnt <= timercnt + 1'b1;
-	  timer_50 <= 1'b0;
-  end	  
+     timer_50 <= 1'b0;
+  end     
 end
 
 //**********************************

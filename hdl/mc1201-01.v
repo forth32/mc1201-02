@@ -25,7 +25,7 @@ module mc1201_01 (
    input  clk50,               // входная тактовая частота платы - 50 МГц
    output busclk,              // Основной синхросигнал общей шины
    output sdclk,               // Синхросигнал SD-карты
-	output clkrdy,              // сигнал готовности тактового генератора
+   output clkrdy,              // сигнал готовности тактового генератора
    input  cpuslow,             // Режим замедления процессора
 
 // Шина Wishbone                                       
@@ -55,14 +55,14 @@ module mc1201_01 (
    input  iack,                // Подтверждение приема вектора прерывания
 
 // Таймер
-	input  timer_button,        // кнопка включения-отключения таймера
-	output reg timer_status     // линия индикатора состояния таймера
+   input  timer_button,        // кнопка включения-отключения таймера
+   output reg timer_status     // линия индикатора состояния таймера
 );
 
 // Регистр начального пуска
 reg [15:0] startup_reg;
 // регистры sel2 - четный и нечетный
-reg  [15:0]	SEL2_even, SEL2_odd;				
+reg  [15:0]   SEL2_even, SEL2_odd;            
 
 // Синхросигналы
 wire clk_p;    
@@ -72,11 +72,11 @@ wire clk_n;
 wire [15:0] local_dat_i;    // локальная входная шина данных
 wire local_cyc;             // локальный сигнал начала транзацкии
 wire cpu_ack;               // вход REPLY процессора
-wire [3:1]	vm_irq;			 // собственные входы запросов прерывания
+wire [3:1]   vm_irq;          // собственные входы запросов прерывания
 wire cpu_dev_stb;           // запрос на доступ к периферийному блоку процессора 
 wire cpu_dev_ack;           // ответ от периферийного блока
-wire [15:0]	cpu_dev_dat;    // шина данных периферийного блока
-wire [2:1]	vm_sel;			 // выбор SEL-регистра
+wire [15:0]   cpu_dev_dat;    // шина данных периферийного блока
+wire [2:1]   vm_sel;          // выбор SEL-регистра
 
 // периферийный блок регистров процессора 177700-177717
 assign cpu_dev_stb= cpu_stb_o & local_cyc & (cpu_adr_o[15:4] == (16'o177700 >> 4));   
@@ -98,14 +98,14 @@ assign cpu_ack = global_ack | rom_ack | cpu_dev_ack;
 assign local_dat_i = (rom_stb)?                 rom_dat    : 16'o0    // теневой ROM
                    | (cpu_dev_stb)?             cpu_dev_dat: 16'o0    // периферийный блок процессора
                    | (~rom_stb & ~cpu_dev_stb)? cpu_dat_i  : 16'o0;   // остальные устройства на шине
-						 
+                   
 // Разрешение транзакций на общей шине - только при отсутствии доступа к локальным устройствам
 assign cpu_cyc_o=local_cyc & (~rom_stb) & (~cpu_dev_stb);
 
 // Невекторные прерывания
-assign		vm_irq[1] = halt;                  // кнопка входа в пульт
-assign		vm_irq[2] = timer_50&timer_status; // маскируемое прерывание от часов 50гц
-assign		vm_irq[3] = 1'b0;
+assign      vm_irq[1] = halt;                  // кнопка входа в пульт
+assign      vm_irq[2] = timer_50&timer_status; // маскируемое прерывание от часов 50гц
+assign      vm_irq[3] = 1'b0;
 
 //************************************************
 //* тактовый генератор 
@@ -130,13 +130,13 @@ reg cpu_clk_enable;
 
 always @ (posedge clk_p) begin
     if (cpudelay != 5'd21) begin
-	     cpudelay <= cpudelay + 1'b1;  // считаем от 0 до 22
-		  cpu_clk_enable <= 1'b0;
-	 end	  
+        cpudelay <= cpudelay + 1'b1;  // считаем от 0 до 22
+        cpu_clk_enable <= 1'b0;
+    end     
     else begin
-	     cpudelay <= 5'd0;
-		  cpu_clk_enable <= 1'b1;
-	 end	  
+        cpudelay <= 5'd0;
+        cpu_clk_enable <= 1'b1;
+    end     
 end    
 
 //*************************************
@@ -165,12 +165,12 @@ vm1_wb #(.VM1_CORE_MULG_VERSION(1)) cpu
    .wbm_ack_i(cpu_ack),             // вход подтверждения данных
 
 // Сбросы и прерывания
-   .vm_pa(2'b00),                  	// номер процессора для многопроцессорной конфигурации
-   .vm_init_in(1'b0), 			      // вход сброса от ведущего процессора
+   .vm_pa(2'b00),                     // номер процессора для многопроцессорной конфигурации
+   .vm_init_in(1'b0),                // вход сброса от ведущего процессора
    .vm_init_out(vm_init),           // Выход сброса для периферии
    .vm_dclo(dclo),                  // Вход сброса процессора
    .vm_aclo(aclo),                  // Сигнал аварии питания
-   .vm_irq(vm_irq),	    	      	// запросы фиксированного прерывания
+   .vm_irq(vm_irq),                   // запросы фиксированного прерывания
    .vm_virq(virq),                  // Векторное прерывание
 
 // Шины обработки прерываний                                       
@@ -179,18 +179,18 @@ vm1_wb #(.VM1_CORE_MULG_VERSION(1)) cpu
    .wbi_ack_i(iack),                // Подтверждение приема вектора прерывания
 
 // шина к периферийному блоку
-	.wbs_adr_i(cpu_adr_o[3:0]),		// адрес регистра периферийного блока
-   .wbs_dat_i(cpu_dat_o),				// вход данных
-	.wbs_dat_o(cpu_dev_dat),			// выход данных
-	.wbs_cyc_i(local_cyc),				// строб цикла шины
-	.wbs_stb_i(cpu_dev_stb),			// строб транзакции
-	.wbs_ack_o(cpu_dev_ack),			// подтверждение транзакции
-	.wbs_we_i(cpu_we_o),	   			// разрешение записи
+   .wbs_adr_i(cpu_adr_o[3:0]),      // адрес регистра периферийного блока
+   .wbs_dat_i(cpu_dat_o),            // вход данных
+   .wbs_dat_o(cpu_dev_dat),         // выход данных
+   .wbs_cyc_i(local_cyc),            // строб цикла шины
+   .wbs_stb_i(cpu_dev_stb),         // строб транзакции
+   .wbs_ack_o(cpu_dev_ack),         // подтверждение транзакции
+   .wbs_we_i(cpu_we_o),               // разрешение записи
 
 //  SEL-регистры
-   .vm_reg14(SEL2_even),					// 177714 - SEL2
-   .vm_reg16(startup_reg),	 				// 177716 - SEL1, регистр начального запуска	
-   .vm_sel(vm_sel)    						// выбирает регистры 14 или 16 соответствующими битами
+   .vm_reg14(SEL2_even),               // 177714 - SEL2
+   .vm_reg16(startup_reg),                // 177716 - SEL1, регистр начального запуска   
+   .vm_sel(vm_sel)                      // выбирает регистры 14 или 16 соответствующими битами
 );
 
 //******************************************************************
@@ -217,25 +217,25 @@ end
 //******************************************************************************************
 
 always @(posedge clk_p) begin
-	if (dclo) 	begin
-	   // сброс регистров сигналом DCLO, до запуска процессора
-		SEL2_even <= 16'o000000;
-		SEL2_odd <= 16'o000000;
+   if (dclo)    begin
+      // сброс регистров сигналом DCLO, до запуска процессора
+      SEL2_even <= 16'o000000;
+      SEL2_odd <= 16'o000000;
 
 // регистр начального пуска
 // D15-D8 - адрес старта процессора
 // D0, D1 - режим начального пуска
 // D2 - младшая часть теневого ROM
 // D3 - старшая часть теневого ROM
-		startup_reg <= {14'b11100000000001, `STARTUP};
-	end
-	// запись регистров
-	else begin
-		if (vm_sel[2] & cpu_we_o & ~cpu_adr_o[0]) SEL2_even <= cpu_dat_o; // запись четного sel2
-		if (vm_sel[2] & cpu_we_o &  cpu_adr_o[0]) SEL2_odd <= cpu_dat_o;  // запись нечетного sel2
-		if (vm_sel[1] & cpu_we_o) startup_reg[7:2] <= cpu_dat_o[7:2];  // запись регистра начального пуска
+      startup_reg <= {14'b11100000000001, `STARTUP};
+   end
+   // запись регистров
+   else begin
+      if (vm_sel[2] & cpu_we_o & ~cpu_adr_o[0]) SEL2_even <= cpu_dat_o; // запись четного sel2
+      if (vm_sel[2] & cpu_we_o &  cpu_adr_o[0]) SEL2_odd <= cpu_dat_o;  // запись нечетного sel2
+      if (vm_sel[1] & cpu_we_o) startup_reg[7:2] <= cpu_dat_o[7:2];  // запись регистра начального пуска
 
-	end
+   end
 end
 
 //**********************************
@@ -247,12 +247,12 @@ reg [21:0] timercnt;
 always @ (posedge clk_p) begin
   if (timercnt == 21'd1999999) begin
      timercnt <= 21'd0;
-	  timer_50 <= 1'b1;
+     timer_50 <= 1'b1;
   end  
   else begin
      timercnt <= timercnt + 1'b1;
-	  timer_50 <= 1'b0;
-  end	  
+     timer_50 <= 1'b0;
+  end     
 end
 
 //**********************************

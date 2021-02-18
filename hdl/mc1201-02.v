@@ -33,7 +33,7 @@ module mc1201_02 (
    input  clk50,               // входная тактовая частота платы - 50 МГц
    output busclk,              // Основной синхросигнал общей шины
    output sdclk,               // Синхросигнал SD-карты
-	output clkrdy,              // сигнал готовности тактового генератора
+   output clkrdy,              // сигнал готовности тактового генератора
    input  cpuslow,             // Режим замедления процессора
 
 // Шина Wishbone                                       
@@ -63,9 +63,9 @@ module mc1201_02 (
    input  iack,                // Подтверждение приема вектора прерывания
 
 // Таймер
-//	input  timer_50,            // Сигнал таймерного прерывания 50 Гц
-	input  timer_button,        // кнопка включения-отключения таймера
-	output reg timer_status     // линия индикатора состояния таймера
+//   input  timer_50,            // Сигнал таймерного прерывания 50 Гц
+   input  timer_button,        // кнопка включения-отключения таймера
+   output reg timer_status     // линия индикатора состояния таймера
 );
 
 // синхросигналы 
@@ -130,13 +130,13 @@ reg cpu_clk_enable;
 
 always @ (posedge clk_p) begin
     if (cpudelay != 5'd21) begin
-	     cpudelay <= cpudelay + 1'b1;  // считаем от 0 до 22
-		  cpu_clk_enable <= 1'b0;
-	 end	  
+        cpudelay <= cpudelay + 1'b1;  // считаем от 0 до 22
+        cpu_clk_enable <= 1'b0;
+    end     
     else begin
-	     cpudelay <= 5'd0;
-		  cpu_clk_enable <= 1'b1;
-	 end	  
+        cpudelay <= 5'd0;
+        cpu_clk_enable <= 1'b1;
+    end     
 end    
 
 //*************************************
@@ -207,12 +207,12 @@ reg [20:0] timercnt;
 always @ (posedge clk_p) begin
   if (timercnt == 21'd1999999) begin
      timercnt <= 21'd0;
-	  timer_50 <= 1'b1;
+     timer_50 <= 1'b1;
   end  
   else begin
      timercnt <= timercnt + 1'b1;
-	  timer_50 <= 1'b0;
-  end	  
+     timer_50 <= 1'b0;
+  end     
 end
 
 
