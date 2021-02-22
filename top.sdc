@@ -19,12 +19,13 @@
 ## PROGRAM "Quartus Prime"
 ## VERSION "Version 18.0.0 Build 614 04/24/2018 SJ Standard Edition"
 
-## DATE    "Wed Feb 17 19:48:53 2021"
+## DATE    "Fri Feb 19 07:45:51 2021"
 
 ##
 ## DEVICE  "EP4CE22F17C7"
 ##
 
+derive_clock_uncertainty
 
 #**************************************************************
 # Time Information
@@ -40,12 +41,12 @@ set_time_format -unit ns -decimal_places 3
 
 create_clock -name {clk} -period 20.000 -waveform { 0.000 10.000 } [get_ports {clk50}]
 
-
 #**************************************************************
 # Create Generated Clock
 #**************************************************************
-create_generated_clock -name {mc1201_02:cpu|timer_50} -source [get_nets {cpu|corepll|altpll_component|auto_generated|wire_pll1_clk[0]}] -divide_by 2000000 -duty_cycle 0.0000005
-
+create_generated_clock -source [get_pins {cpu|corepll|altpll_component|auto_generated|pll1|inclk[0]}] -divide_by 1 -multiply_by 2 [get_pins {cpu|corepll|altpll_component|auto_generated|pll1|clk[0]}]
+create_generated_clock -source [get_pins {cpu|corepll|altpll_component|auto_generated|pll1|inclk[0]}] -divide_by 1 -multiply_by 2 -phase 180 [get_pins {cpu|corepll|altpll_component|auto_generated|pll1|clk[1]}]
+create_generated_clock -source [get_pins {cpu|corepll|altpll_component|auto_generated|pll1|inclk[0]}] -divide_by 4 -multiply_by 1 [get_pins {cpu|corepll|altpll_component|auto_generated|pll1|clk[2]}]
 
 
 #**************************************************************
