@@ -944,7 +944,6 @@ wbc_vic #(.N(9)) vic
    .wb_dat_o(vm_ivec),
    .wb_stb_i(vm_istb),
    .wb_ack_o(vm_iack),
-   .rsel(16'o0),    // содержимое регистра безадресного чтения
 //         UART1-Tx     UART1-Rx   UART2-Tx    UART2-Rx     RK-11D        IRPR           DW         RX-11         MY  
    .ivec({16'o000064, 16'o000060, 16'o000334,  16'o000330, 16'o000220,  16'o000330, 16'o000300, 16'o000264, 16'o000170 }),   // векторы
    .ireq({irpstx_irq, irpsrx_irq, irpstx2_irq, irpsrx2_irq, rk11_irq,     lpt_irq,    dw_irq,     rx_irq,      my_irq  }),   // запрос прерывания
@@ -1024,7 +1023,7 @@ assign lpt_stb    = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o177514 >> 2));   // 
 assign rk11_stb   = wb_stb & wb_cyc & (wb_adr[15:4] == (16'o177400 >> 4));   // RK - 177400-177416
 assign dw_stb     = wb_stb & wb_cyc & (wb_adr[15:5] == (16'o174000 >> 5));   // DW - 174000-174026
 assign rx_stb     = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o177170 >> 2));   // DX - 177170-177172
-assign my_stb     = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o172140 >> 2));   // MY - 172140-172142 / 177130-177132
+assign my_stb     = wb_stb & wb_cyc & (wb_adr[15:2] == (16'o172140 >> 2));   // MY - 172140-172142 
 assign kgd_stb    = wb_stb & wb_cyc & (wb_adr[15:3] == (16'o176640 >> 3));   // КГД - 176640-176646
 
 // ПЗУ пользователя
