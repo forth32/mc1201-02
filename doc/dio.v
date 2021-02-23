@@ -1,3 +1,7 @@
+//*********************************************************************************************
+//*  Этот модуль является примером разработки простейшего периферийного устройства
+//*  Процесс разработки описывается в документе build-own-modules
+//*********************************************************************************************
 module dio (
    input                  wb_clk_i,   // тактовая частота шины
    input                  wb_rst_i,   // сброс
@@ -47,10 +51,10 @@ reg[1:0] interrupt_state;
 always @ (posedge wb_clk_i) begin
      // вводим каждый сигнал в сдвиговый регистр
      di1_filter[0] <= di1;
-	  di1_filter[1] <= di1_filter[0];
+     di1_filter[1] <= di1_filter[0];
 
      di2_filter[0] <= di2;
-	  di2_filter[1] <= di2_filter[0];
+     di2_filter[1] <= di2_filter[0];
 end
 // выходы сдвиговых регистров - это отфильтрованные сигналы
 assign di1f=di1_filter[1];
@@ -70,17 +74,17 @@ always @(posedge wb_clk_i or posedge wb_rst_i)
 //**************************************************
 always @(posedge wb_clk_i)   begin
     if (reset == 1'b1) begin
-	    //******************
+       //******************
        // сброс системы
-	    //******************
+       //******************
        interrupt_state <= i_idle ; 
        irq <= 1'b0 ;    // снимаем запрос на прерывания
        ie <= 1'b0;
        interrupt_trigger <= 1'b1;
-		 di1old <= 1'b0;
-		 di2old <= 1'b0;
-		 do1 <= 1'b0;
-		 do2 <= 1'b0;
+       di1old <= 1'b0;
+       di2old <= 1'b0;
+       do1 <= 1'b0;
+       do2 <= 1'b0;
     end
       
     // рабочие состояния
@@ -96,12 +100,12 @@ always @(posedge wb_clk_i)   begin
                interrupt_state <= i_req ; 
                irq <= 1'b1 ;    // запрос на прерывание
           end 
-			 // иначе снимаем запрос на прерывание
+          // иначе снимаем запрос на прерывание
           else   irq <= 1'b0 ;    
         end
           // Формирование запроса на прерывание         
         i_req :   
-		    if (ie == 1'b0)    interrupt_state <= i_idle;     // прерывания запрещены
+          if (ie == 1'b0)    interrupt_state <= i_idle;     // прерывания запрещены
           else if (iack == 1'b1) begin
           // если получено подтверждение прерывания от процессора
               irq <= 1'b0 ;               // снимаем запрос
@@ -115,7 +119,7 @@ always @(posedge wb_clk_i)   begin
       //*********************************************
       //* Обработка шинных транзакций 
       //*********************************************
-		
+      
       // чтение регистров
       if (bus_read_req == 1'b1)   begin
          case (wb_adr_i[1])
@@ -133,25 +137,25 @@ always @(posedge wb_clk_i)   begin
            case (wb_adr_i[1])
            // 175300 - CSR
               1'b0:  begin
-				           ie <= wb_dat_i[6];   // флаг разрешения прерывания
-					        if (wb_dat_i[5] == 1'b1) interrupt_trigger <= 1'b0; // сброс триггера запроса прерывания
-							end  
+                       ie <= wb_dat_i[6];   // флаг разрешения прерывания
+                       if (wb_dat_i[5] == 1'b1) interrupt_trigger <= 1'b0; // сброс триггера запроса прерывания
+                     end  
            // 175302 - DR
               1'b1 : begin
-				           do1<=wb_dat_i[2];
-				           do2<=wb_dat_i[3];
-		              	end	
+                       do1<=wb_dat_i[2];
+                       do2<=wb_dat_i[3];
+                       end   
             endcase 
       end
 
       //*********************************************
       //* Детектор изменения входных сигналов
       //*********************************************
-		
-		if ((di1old != di1f) || (di2old != di2f)) interrupt_trigger <= 1'b1;
-		di1old <= di1f;
-		di2old <= di2f;
-	end	
+      
+      if ((di1old != di1f) || (di2old != di2f)) interrupt_trigger <= 1'b1;
+      di1old <= di1f;
+      di2old <= di2f;
+   end   
 end
 
 endmodule
