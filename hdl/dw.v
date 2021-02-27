@@ -153,8 +153,9 @@ sdspi sd1 (
       // интерфейс к карте
       .sdcard_cs(sdcard_cs), 
       .sdcard_mosi(sdcard_mosi), 
-      .sdcard_sclk(sdcard_sclk), 
       .sdcard_miso(sdcard_miso),
+      .sdcard_sclk(sdcard_sclk),
+		
       .sdcard_debug(sdcard_debug),                // информационные индикаторы   
    
       .sdcard_addr(sdcard_addr),                  // адрес блока на карте

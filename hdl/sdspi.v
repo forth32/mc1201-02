@@ -95,7 +95,6 @@ module sdspi (
    reg[9:0] counter; 
    reg[7:0] sectorindex; 
    reg[15:0] sd_word; 
-   wire clk; 
    reg[3:0] idle_filter; 
    reg[3:0] read_start_filter; 
    reg[3:0] read_ack_filter; 
@@ -114,8 +113,10 @@ module sdspi (
    reg write_done; 
    reg card_error; 
 
-   // Интерфейс к хост-модулю
-   always @(posedge controller_clk) begin
+//*******************************************	
+//* Интерфейс к хост-модулю
+//*******************************************	
+always @(posedge controller_clk) begin
          
          // операции с буферами
          sdcard_xfer_out <= rsector[sdcard_xfer_addr] ; // слово, читаемое из буфера чтения
@@ -177,22 +178,37 @@ module sdspi (
             if (card_error_filter == {4{1'b0}}) sdcard_error <= 1'b0 ; 
             else if (card_error_filter == {4{1'b1}}) sdcard_error <= 1'b1 ; 
          end 
-   end 
+end 
 
-   // тактовый сигнал карты
-   assign clk=sdclk;
-   assign sdcard_sclk = clk ;
+//*******************************************	
+// Интерфейс к SD-карте
+//*******************************************	
 
-   // Интерфейс к SD-карте
-   always @(posedge clk)  begin
+// Генератор замедленного тактирования карты
+reg [4:0] sdcounter;
+always @ (posedge sdclk) sdcounter <= sdcounter + 1'b1;
+
+// Переключатель источника тактирования карты 
+//  1 - полная частота, 0 - 400 КГц
+reg sdslow;  
+
+// тактовый сигнал карты
+assign sdcard_sclk = sdslow? sdclk : sdcounter[4];
+
+//*******************************************	
+//* Обработка обмена данными с картой по SPI
+//*******************************************	
+always @(posedge sdcard_sclk)  begin
      // сброс
          if (reset == 1'b1) begin
                if (mode == 1'b1) begin 
                   // режим ведущего  - переходим к инициализации карты
                   sd_state <= sd_reset ; 
+						sdslow <= 1'b0;
                end   
                else begin 
                   // режим ведомого - переходим в состояние ожидания
+						sdslow <= 1'b1;
                   sd_state <= sd_idle;  
                   // заранее настраиваем регистры как после инициализации
                   idle <= 1'b1 ;          
@@ -209,10 +225,11 @@ module sdspi (
          else  begin
             // машина состояний карты
             case (sd_state)
-         
-               sd_reset :         // начало инициализации
+               // начало инициализации
+               sd_reset :         
                         begin
                            counter <= 10'd500 ; // счетчик ожидания перед инициализацией
+									sdslow <= 1'b0;
                            do_readr3 <= 1'b0 ; 
                            do_readr7 <= 1'b0 ; 
                            sdcard_cs <= 1'b1 ;     // CS=1
@@ -271,7 +288,10 @@ module sdspi (
                // проверяем ответ на ACMD41
                sd_checkacmd41 :
                         begin
-                           if (sd_r1 == 7'b0000000) sd_state <= sd_idle ; // Правильный ответ - переходим к рабочему циклу обработки команд                           
+                           if (sd_r1 == 7'b0000000) begin
+										sd_state <= sd_idle ; // Правильный ответ - переходим к рабочему циклу обработки команд                           
+										sdslow <= 1'b1;
+									end	
                            else  sd_state <= sd_checkcmd8 ;   // неправильный ответ - бесконечно повторяем acmd41
                         end   
                // Ожидание команды обмена

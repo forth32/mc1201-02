@@ -32,8 +32,9 @@ module fdd_my (
 // интерфейс SD-карты
    output     sdcard_cs, 
    output     sdcard_mosi, 
-   output     sdcard_sclk, 
-   input      sdcard_miso, 
+   input      sdcard_miso,
+	output     sdcard_sclk,
+
    output reg sdreq,      // запрос доступа к карте
    input      sdack,      // подтверждение доступа к карте
    input      sdmode,     // режим SDSPI
@@ -208,8 +209,9 @@ sdspi sd1 (
       // интерфейс к карте
       .sdcard_cs(sdcard_cs), 
       .sdcard_mosi(sdcard_mosi), 
-      .sdcard_sclk(sdcard_sclk), 
       .sdcard_miso(sdcard_miso),
+      .sdcard_sclk(sdcard_sclk),
+		
       .sdcard_debug(sdcard_debug),               // информационные индикаторы   
    
       .sdcard_addr(sdcard_addr),                 // адрес блока на карте
