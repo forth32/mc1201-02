@@ -94,9 +94,9 @@ lsi_wb cpu
 // Шина Wishbone                                       
    .wbm_gnt_i(cpu_gnt_i),           // 1 - разрешение cpu работать с шиной
                                     // 0 - DMA с внешними устройствами, cpu отключен от шины и бесконечно ждет ответа wb_ack
-   .wbm_adr_o(cpu_adr_o),            // выход шины адреса
+   .wbm_adr_o(cpu_adr_o),           // выход шины адреса
    .wbm_dat_o(cpu_dat_o),           // выход шины данных
-   .wbm_dat_i(cpu_dat_i),         // вход шины данных
+   .wbm_dat_i(cpu_dat_i),           // вход шины данных
    .wbm_cyc_o(cpu_cyc_o),           // Строб цила wishbone
    .wbm_we_o(cpu_we_o),             // разрешение записи
    .wbm_sel_o(cpu_sel_o),           // выбор байтов для передачи

@@ -13,8 +13,8 @@ module rk11 (
    output reg             wb_ack_o,   // подтверждение выбора устройства
 
 // обработка прерывания   
-   output reg            irq,         // запрос
-   input                 iack,        // подтверждение
+   output reg             irq,         // запрос
+   input                  iack,        // подтверждение
    
 // DMA
    output reg             dma_req,    // запрос DMA
@@ -191,7 +191,7 @@ module rk11 (
       .sdcard_mosi(sdcard_mosi), 
       .sdcard_miso(sdcard_miso),
       .sdcard_sclk(sdcard_sclk),
-		
+      
       .sdcard_debug(sdcard_debug),                // информационные индикаторы   
    
       .sdcard_addr(sdcard_addr),                  // адрес блока на карте

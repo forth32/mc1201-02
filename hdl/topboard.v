@@ -16,9 +16,9 @@
 //***********************************
 module topboard (
 
-   input          clk50,         // clock input 50 MHz
-   input    [3:0] button,        // кнопки 
-   input    [3:0] sw,            // переключатели конфигурации
+   input          clk50,        // clock input 50 MHz
+   input    [3:0] button,       // кнопки 
+   input    [3:0] sw,           // переключатели конфигурации
    
    // Интерфейс SDRAM
    inout  [15:0]  DRAM_DQ,      //   SDRAM Data bus 16 Bits
@@ -72,8 +72,8 @@ module topboard (
 
 wire [2:0] vspeed;   // индекс скорости порта
 
-wire        sys_init;                  // общий сброс
-wire        sys_plock;                 // готовность PLL
+wire        sys_init;         // общий сброс
+wire        sys_plock;        // готовность PLL
 wire        terminal_rst;
 
 // шина WISHBONE                                       
@@ -174,16 +174,16 @@ wire        reset_key;      // кнопка сброса
 wire         sdclock;       // тактирование SD-карты
 wire         rk_mosi;       // mosi от RK11
 wire         rk_cs;         // cs от RK11
-wire			 rk_sclk;       // sclk от RK11
+wire         rk_sclk;       // sclk от RK11
 wire         dw_mosi;       // mosi от DW
 wire         dw_cs;         // cs от DW
-wire			 dw_sclk;
+wire         dw_sclk;
 wire         dx_mosi;       // mosi от DW
 wire         dx_cs;         // cs от DW
-wire			 dx_sclk;
+wire         dx_sclk;
 wire         my_mosi;       // mosi от MY
 wire         my_cs;         // cs от MY
-wire			 my_sclk;
+wire         my_sclk;
 
 // Сигналы диспетчера доступа к SD-карте
 wire        rk_sdreq;       // запрос доступа
@@ -703,7 +703,8 @@ rk11 rkdisk (
    .sdcard_cs(rk_cs), 
    .sdcard_mosi(rk_mosi), 
    .sdcard_miso(sdcard_miso), 
-	.sdcard_sclk(rk_sclk),
+   .sdcard_sclk(rk_sclk),
+
    .sdclock(sdclock),
    .sdreq(rk_sdreq),
    .sdack(rk_sdack),
@@ -753,8 +754,8 @@ dw hdd(
    .sdcard_cs(dw_cs), 
    .sdcard_mosi(dw_mosi), 
    .sdcard_miso(sdcard_miso), 
-	.sdcard_sclk(dw_sclk),
-	
+   .sdcard_sclk(dw_sclk),
+   
    .sdclock(sdclock),
    .sdreq(dw_sdreq),
    .sdack(dw_sdack),
@@ -803,7 +804,7 @@ rx01 dxdisk (
    .sdcard_cs(dx_cs), 
    .sdcard_mosi(dx_mosi), 
    .sdcard_miso(sdcard_miso), 
-	.sdcard_sclk(dx_sclk),
+   .sdcard_sclk(dx_sclk),
 
    .sdmode(`DX_sdmode),          
    .sdreq(dx_sdreq),
@@ -874,7 +875,7 @@ fdd_my mydisk (
    .sdcard_cs(my_cs), 
    .sdcard_mosi(my_mosi), 
    .sdcard_miso(sdcard_miso), 
-	.sdcard_sclk(my_sclk),
+   .sdcard_sclk(my_sclk),
 
    .sdclock(sdclock),
    .sdreq(my_sdreq),
@@ -937,8 +938,8 @@ assign sdcard_cs =
          my_sdack? my_cs:   // MY
          rk_sdack? rk_cs:   // RK
                    `def_cs;   // по умолчанию - контроллер с ведущим SDSPI
-						 
-assign sdcard_sclk = 						 
+                   
+assign sdcard_sclk =                    
          dw_sdack? dw_sclk:   // DW
          dx_sdack? dx_sclk:   // DX
          my_sdack? my_sclk:   // MY
